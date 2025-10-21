@@ -1,0 +1,52 @@
+/* Tailwind CSS v4 imports */
+@import "tailwindcss";
+
+/* Reset + typography */
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Pretendard, "Noto Sans KR", "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
+  background: #F5FFF8;
+  color: #064E3B;
+  background-attachment: fixed;
+}
+
+h1, h2, h3 {
+  margin: 0;
+}
+
+/* Base styles */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ul {
+    list-style-type: disc;
+    list-style-position: outside;
+    padding-left: 1.25rem;
+  }
+
+  ol {
+    list-style-type: decimal;
+    list-style-position: outside;
+    padding-left: 1.25rem;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #047857;
+    opacity: 1;
+  }
+}
