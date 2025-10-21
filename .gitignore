@@ -1,0 +1,30 @@
+# Ignore backend and non-frontend artifacts
+
+# Backend (Python/FastAPI/DB)
+/backend/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.db
+alembic/
+
+# Local/IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.*
+
+# Node/Frontend build caches (kept in frontend/.gitignore too, but safe here)
+node_modules/
+dist/
+build/
+
+# Any other teacher/sample folders that shouldn't be in this repo
+/Sub_Pro*/
