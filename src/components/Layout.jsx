@@ -1,19 +1,19 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
+import { useWeather } from '../hooks/useWeather'
 import { useState, useEffect } from 'react'
 import Popover from './Popover'
 import dayjs from 'dayjs'
-import { getWeather } from '../services/weatherService'
 import Button from './ui/Button'
 
 // 앱 크롬(사이드바 + 상단바)과 로그아웃 동작 담당
 export default function Layout(){
   const loc = useLocation()
   const nav = useNavigate()
+  const { getCurrentUser, logout: logoutHook } = useAuth()
   const [user, setUser] = useState(null)
   const [openBell, setOpenBell] = useState(false)
-  const { getCurrentUser, logout } = useAuth()
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -24,6 +24,7 @@ export default function Layout(){
           setUser(userData)
         } catch (err) {
           console.error('사용자 정보 조회 실패:', err)
+          setUser(null)
         }
       }
     }
@@ -72,7 +73,7 @@ export default function Layout(){
                   <div className="flex flex-col leading-tight">
                     <div className="font-semibold text-text">{user.username || user.email || 'User'}</div>
                   </div>
-                  <Button variant="inverse" onClick={()=>{ logout(); nav('/login') }}>로그아웃</Button>
+                  <Button variant="inverse" onClick={()=>{ logoutHook(); nav('/login') }}>로그아웃</Button>
                 </div>
               ) : (
                 <Button onClick={()=>nav('/login')}>로그인</Button>
@@ -90,6 +91,7 @@ export default function Layout(){
 function BellContent(){
   const [items, setItems] = useState([])
   const { getTripsByUser } = useTrip()
+  const { getWeather } = useWeather()
   const { getCurrentUser } = useAuth()
 
   useEffect(()=>{

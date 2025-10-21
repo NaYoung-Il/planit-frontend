@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getWeather } from '../services/weatherService'
+import { useWeather } from '../hooks/useWeather'
 
 // 현재 날씨를 조회/표시, API 키 없으면 '목업' 데이터로 대체
 export default function WeatherWidget({city='Seoul'}){
+  const { getWeather } = useWeather()
   const [data,setData] = useState(null)
   const [theme,setTheme] = useState('clear')
 

@@ -3,13 +3,16 @@ import WeatherWidget from '../components/WeatherWidget'
 import CalMini from '../components/CalMini'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import { addEvent, listByMonth, listEvents, removeEvent, updateEvent } from '../services/eventService'
+import { useEvent } from '../hooks/useEvent'
+import { useTrip } from '../hooks/useTrip'
 import Button from '../components/ui/Button'
 import Empty from '../components/ui/Empty'
 import Badge from '../components/ui/Badge'
 
 // Home : 캘린더/메모/빠른 여행 생성/날씨 위젯
 export default function Home(){
+  const { listByMonth, addEvent: addEventHook, listEvents: listEventsHook, updateEvent: updateEventHook, removeEvent: removeEventHook } = useEvent()
+  const { createTrip } = useTrip()
   const today = dayjs()
   const [month, setMonth] = useState(today)
   const [sel, setSel] = useState(today)
@@ -31,37 +34,38 @@ export default function Home(){
     const key = sel.format('YYYY-MM-DD')
     const txt = prompt(`${key} 메모를 입력하세요:`)
     if(!txt) return
-    addEvent(key, txt)
+    addEventHook(key, txt)
     setEvents(listByMonth(month.format('YYYY-MM')))
   }
 
   const editMemo = (id)=>{
     const key = sel.format('YYYY-MM-DD')
-    const cur = listEvents(key).find(e=>e.id===id)
+    const cur = listEventsHook(key).find(e=>e.id===id)
     const txt = prompt('메모 수정', cur?.text || '')
     if(txt==null) return
-    updateEvent(key, id, txt)
+    updateEventHook(key, id, txt)
     setEvents(listByMonth(month.format('YYYY-MM')))
   }
 
   const delMemo = (id)=>{
     const key = sel.format('YYYY-MM-DD')
-    removeEvent(key, id)
+    removeEventHook(key, id)
     setEvents(listByMonth(month.format('YYYY-MM')))
   }
 
-  const createTripFromRange = ()=>{
+  const createTripFromRange = async ()=>{
     if(!(range.start && range.end)) return alert('기간을 먼저 선택하세요.')
-    const trip = {
-      id: crypto.randomUUID(),
-      name: `${range.start.format('MM.DD')}~${range.end.format('MM.DD')} 여행`,
-      city: '미정',
-      start: range.start.format('YYYY-MM-DD'),
-      end: range.end.format('YYYY-MM-DD'),
-      todo: []
+    const tripData = {
+      title: `${range.start.format('MM.DD')}~${range.end.format('MM.DD')} 여행`,
+      start_date: range.start.format('YYYY-MM-DD'),
+      end_date: range.end.format('YYYY-MM-DD'),
     }
-    saveTrip(trip)
-    alert('여행 일정이 생성되었습니다. 여행 메뉴에서 확인하세요.')
+    try {
+      await createTrip(tripData)
+      alert('여행 일정이 생성되었습니다. 여행 메뉴에서 확인하세요.')
+    } catch (err) {
+      alert('여행 일정 생성에 실패했습니다.')
+    }
   }
   return (
     <div className="grid gap-6 relative z-[1] mt-6" style={{gridTemplateColumns: '1fr 420px'}}>
@@ -129,6 +133,7 @@ export default function Home(){
 
 // 메모 리스트 컴포넌트
 function MemoList({dateKey, onEdit, onDelete}){
+  const { listEvents } = useEvent()
   const items = listEvents(dateKey)
   if(items.length===0) return (
     <Empty message="메모가 없습니다." className="!py-3 !text-xs" />
@@ -147,4 +152,3 @@ function MemoList({dateKey, onEdit, onDelete}){
     </div>
   )
 }
-

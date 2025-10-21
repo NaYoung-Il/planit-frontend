@@ -6,19 +6,18 @@ import Button from '../components/ui/Button'
 
 // Profile : 닉네임/아바타 편집
 export default function Profile(){
+  const { getCurrentUser, updateUser } = useAuth()
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
   const [avatar, setAvatar] = useState('')
   const [avatarFileName, setAvatarFileName] = useState('')
   const fileRef = useRef()
-  const { getCurrentUser, updateUser, loading, error } = useAuth()
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const user = await getCurrentUser()
-        setName(user.username || '')
-        setEmail(user.email || '')
+        setName(user?.username || user?.email || '')
+        setAvatar(user?.avatar || '')
       } catch (err) {
         console.error('사용자 정보 조회 실패:', err)
       }
@@ -28,10 +27,10 @@ export default function Profile(){
 
   const save = async ()=>{
     try {
-      await updateUser({ username: name })
+      await updateUser({ username: name, avatar })
       alert('저장되었습니다')
     } catch (err) {
-      alert('저장에 실패했습니다: ' + (error || '알 수 없는 오류'))
+      alert('저장에 실패했습니다')
     }
   }
   const onUpload = (f)=>{

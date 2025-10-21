@@ -1,88 +1,162 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import dayjs from 'dayjs'
 import Card from '../components/Card'
 import { useReview } from '../hooks/useReview'
 import { useComment } from '../hooks/useComment'
 import { useLike } from '../hooks/useLike'
-import { usePhoto } from '../hooks/usePhoto'
 import { useAuth } from '../hooks/useAuth'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import Empty from '../components/ui/Empty'
 
-// 페이지: 리뷰/댓글/좋아요 기능이 있는 커뮤니티
+// 커뮤니티: 후기 작성/목록/댓글/좋아요를 모두 다루는 메인 화면
 export default function Community(){
+  const [title, setTitle] = useState('')
   const [text, setText] = useState('')
-  const [photo, setPhoto] = useState(null)
-  const [reviews, setReviews] = useState([])
+  const [rating, setRating] = useState(5)
+  const [photoPreview, setPhotoPreview] = useState('')
+  const [photoFile, setPhotoFile] = useState(null)
   const [fileName, setFileName] = useState('')
-  const [tripId, setTripId] = useState(1) // 임시 여행 ID
-  const fileRef = useRef()
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [currentUser, setCurrentUser] = useState(null)
+  const fileRef = useRef(null)
 
-  const { getCurrentUser } = useAuth()
   const { createReview, getReviews, deleteReview } = useReview()
-  const { uploadPhoto } = usePhoto()
-  const [user, setUser] = useState(null)
+  const { createComment } = useComment()
+  const { toggleLike: toggleLikeHook } = useLike()
+  const { getCurrentUser } = useAuth()
+  const tripId = 1 // 임시 여행 ID
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUser = async () => {
       try {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
-
-        // 리뷰 목록 조회
-        const reviewList = await getReviews(tripId)
-        setReviews(reviewList)
+        const user = await getCurrentUser()
+        setCurrentUser(user)
       } catch (err) {
-        console.error('데이터 조회 실패:', err)
+        setCurrentUser(null)
       }
     }
-    fetchData()
+    fetchUser()
   }, [])
 
-  const refresh = async () => {
-    try {
-      const reviewList = await getReviews(tripId)
-      setReviews(reviewList)
-    } catch (err) {
-      console.error('리뷰 목록 조회 실패:', err)
+  const isAuthed = !!currentUser
+
+  const requireAuth = ()=>{
+    if(!currentUser){
+      alert('로그인이 필요합니다.')
+      return null
     }
+    return currentUser
   }
 
-  const onUpload = async (file) => {
+  // 후기 목록을 새로 불러오는 함수
+  const refresh = useCallback(async ()=>{
+    setLoading(true)
+    setError('')
+    try{
+      const data = await getReviews(tripId)
+      setPosts(data)
+    }catch(err){
+      console.error(err)
+      setError('게시글을 불러오지 못했습니다.')
+    }finally{
+      setLoading(false)
+    }
+  }, [tripId])
+
+  useEffect(()=>{ refresh() }, [refresh])
+
+  useEffect(()=>()=>{ if(photoPreview) URL.revokeObjectURL(photoPreview) }, [photoPreview])
+
+  // 평점 입력값을 1~5 사이로 제한
+  const onRatingChange = (value)=>{
+    const parsed = Number(value)
+    if(Number.isNaN(parsed)){
+      setRating(1)
+      return
+    }
+    setRating(Math.min(5, Math.max(1, Math.floor(parsed))))
+  }
+
+  // 선택한 파일을 미리보기/업로드용으로 보관
+  const onUpload = (file)=>{
     if(!file) return
-    setPhoto(file)
+    if(photoPreview) URL.revokeObjectURL(photoPreview)
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
     setFileName(file.name)
   }
 
-  const submit = async (e) => {
+  // 폼 초기화
+  const resetForm = ()=>{
+    if(photoPreview) URL.revokeObjectURL(photoPreview)
+    setTitle('')
+    setText('')
+    setRating(5)
+    setPhotoPreview('')
+    setPhotoFile(null)
+    setFileName('')
+    if(fileRef.current) fileRef.current.value = ''
+  }
+
+  // 후기 등록 시나리오
+  const submit = async (e)=>{
     e.preventDefault()
-    if(!text && !photo) return
+    if(!title.trim() || !text.trim()) return
+    if(!requireAuth()) return
 
-    try {
-      // 리뷰 작성
-      const newReview = await createReview({ content: text }, tripId)
-
-      // 사진이 있으면 업로드
-      if(photo) {
-        await uploadPhoto(newReview.id, photo)
-      }
-
-      setText('')
-      setPhoto(null)
-      setFileName('')
-      if(fileRef.current) fileRef.current.value = ''
-
+    try{
+      await createReview({
+        title: title.trim(),
+        content: text.trim(),
+        rating,
+      }, tripId)
+      resetForm()
       await refresh()
-    } catch (err) {
-      alert('후기 작성에 실패했습니다')
+    }catch(err){
+      console.error(err)
+      alert('게시글을 등록할 수 없습니다.')
     }
   }
 
-  const del = async (id) => {
-    try {
+  // 좋아요 토글
+  const like = async (id)=>{
+    if(!requireAuth()) return
+    try{
+      const info = await toggleLikeHook(id)
+      setPosts(prev=> prev.map(post=> post.id===id ? { ...post, likeCount: info.count, liked: info.is_liked } : post))
+    }catch(err){
+      console.error(err)
+    }
+  }
+
+  // 댓글 작성
+  const comment = async (id, value)=>{
+    const textValue = value.trim()
+    if(!textValue) return
+    if(!requireAuth()) return
+
+    try{
+      await createComment(id, { content: textValue })
+      await refresh()
+    }catch(err){
+      console.error(err)
+      alert('댓글을 등록할 수 없습니다.')
+    }
+  }
+
+  // 후기 삭제
+  const del = async (id)=>{
+    if(!requireAuth()) return
+    if(!window.confirm('게시글을 삭제하시겠습니까?')) return
+    try{
       await deleteReview(id)
       await refresh()
-    } catch (err) {
-      alert('삭제에 실패했습니다')
+    }catch(err){
+      console.error(err)
+      alert('게시글을 삭제할 수 없습니다.')
     }
   }
 
@@ -91,6 +165,22 @@ export default function Community(){
       <div className="col-span-full">
         <Card title="새 후기" subtitle="사진은 선택입니다.">
           <form className="flex flex-col gap-3" onSubmit={submit}>
+            <Input
+              value={title}
+              onChange={e=>setTitle(e.target.value)}
+              placeholder="제목을 입력하세요"
+              required
+            />
+            <div className="flex items-center gap-3 max-w-[200px]">
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                value={rating}
+                onChange={e=>onRatingChange(e.target.value)}
+                placeholder="평점 (1~5)"
+              />
+            </div>
             <textarea
               className="w-full min-h-[160px] rounded-lg p-4 bg-white/55 backdrop-blur border border-primary-dark/12 text-text text-sm leading-relaxed resize-y outline-none transition shadow-sm focus:border-primary focus:shadow-[0_0_0_3px_rgba(16,185,129,0.18)] focus:bg-white/70 placeholder:text-text-soft/70"
               value={text}
@@ -102,133 +192,91 @@ export default function Community(){
               <div className="flex-1 min-h-[40px] flex items-center px-3.5 border border-primary-dark/16 rounded-xl bg-white text-text text-sm min-w-[220px]">{fileName || '선택된 파일 없음'}</div>
             </div>
             <input ref={fileRef} type="file" accept="image/*" onChange={e=>onUpload(e.target.files?.[0])} className="hidden" />
-            {photo && <img className="mt-2 max-h-[220px] rounded-xl shadow" src={URL.createObjectURL(photo)} alt="preview" />}
-            <Button variant="primary" type="submit">올리기</Button>
+            {photoPreview && <img className="mt-2 max-h-[220px] rounded-xl shadow" src={photoPreview} alt="preview" />}
+            {!isAuthed && <p className="text-xs text-text-soft">로그인 후 등록할 수 있습니다.</p>}
+            <Button variant="primary" type="submit" disabled={!isAuthed}>올리기</Button>
           </form>
         </Card>
       </div>
 
       <div className="col-span-full flex flex-col gap-6">
-        {reviews.map(review=> (
-          <ReviewCard
-            key={review.id}
-            review={review}
-            onDelete={del}
-            onRefresh={refresh}
-            currentUser={user}
-          />
-        ))}
+        {loading && <Empty message="게시글을 불러오는 중입니다." />}
+        {!loading && error && <Empty message={error} />}
+        {!loading && !error && posts.length === 0 && <Empty message="아직 등록된 후기가 없습니다." />}
+        {posts.map(post=> {
+          const subtitleParts = [post.author]
+          if(post.rating) subtitleParts.push(`★${post.rating}`)
+          if(post.createdAt) subtitleParts.push(dayjs(post.createdAt).format('YYYY.MM.DD HH:mm'))
+          return (
+            <Card
+              key={post.id}
+              title={post.title || '제목 없음'}
+              subtitle={subtitleParts.filter(Boolean).join(' · ')}
+              right={<Button variant="ghost" size="sm" onClick={()=>del(post.id)}>삭제</Button>}
+            >
+              <div className="flex flex-col gap-2.5">
+                {post.photo && <img className="w-full max-h-[360px] object-cover rounded-xl" src={post.photo} alt="post" />}
+                {post.text && <p className="my-2.5 whitespace-pre-line leading-relaxed">{post.text}</p>}
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={post.liked ? 'text-primary' : ''}
+                    onClick={()=>like(post.id)}
+                  >
+                    {post.liked ? '❤' : '♡'} {post.likeCount}
+                  </Button>
+                </div>
+                <div className="flex flex-col gap-2 mt-2.5">
+                  {post.comments.map(comment=> (
+                    <div key={comment.id} className="bg-surface border border-primary-dark/16 px-2.5 py-2 rounded-lg text-sm">
+                      <b>{comment.author}</b> {comment.text}
+                    </div>
+                  ))}
+                  <CommentInput onSubmit={value=>comment(post.id, value)} disabled={!isAuthed} />
+                </div>
+              </div>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-// 리뷰 카드 컴포넌트
-function ReviewCard({review, onDelete, onRefresh, currentUser}) {
-  const { toggleLike, getLikes } = useLike()
-  const { getComments, createComment, deleteComment } = useComment()
-  const { getPhotos } = usePhoto()
+// 댓글 입력 라인
+function CommentInput({ onSubmit, disabled }){
+  const [value, setValue] = useState('')
+  const [pending, setPending] = useState(false)
 
-  const [likes, setLikes] = useState({ count: 0, is_liked: false })
-  const [comments, setComments] = useState([])
-  const [photos, setPhotos] = useState([])
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [likeData, commentList, photoList] = await Promise.all([
-          getLikes(review.id),
-          getComments(review.id),
-          getPhotos(review.id)
-        ])
-        setLikes(likeData)
-        setComments(commentList)
-        setPhotos(photoList)
-      } catch (err) {
-        console.error('리뷰 상세 정보 조회 실패:', err)
-      }
-    }
-    fetchData()
-  }, [review.id])
-
-  const handleLike = async () => {
-    try {
-      const result = await toggleLike(review.id)
-      setLikes(result)
-    } catch (err) {
-      console.error('좋아요 처리 실패:', err)
+  const submit = async ()=>{
+    if(!value.trim() || pending) return
+    setPending(true)
+    try{
+      await onSubmit(value)
+      setValue('')
+    }finally{
+      setPending(false)
     }
   }
 
-  const handleAddComment = async (text) => {
-    if(!text) return
-    try {
-      await createComment(review.id, { content: text })
-      const commentList = await getComments(review.id)
-      setComments(commentList)
-    } catch (err) {
-      alert('댓글 작성에 실패했습니다')
-    }
-  }
-
-  const handleDeleteComment = async (commentId) => {
-    try {
-      await deleteComment(review.id, commentId)
-      const commentList = await getComments(review.id)
-      setComments(commentList)
-    } catch (err) {
-      alert('댓글 삭제에 실패했습니다')
-    }
-  }
-
-  return (
-    <Card
-      key={review.id}
-      title={review.user?.username || review.user?.email || '작성자'}
-      right={currentUser?.id === review.user_id && <Button variant="ghost" size="sm" onClick={()=>onDelete(review.id)}>삭제</Button>}
-    >
-      <div className="flex flex-col gap-2.5">
-        {photos.length > 0 && (
-          <img
-            className="w-full max-h-[360px] object-cover rounded-xl"
-            src={photos[0].url || photos[0].data}
-            alt="review"
-          />
-        )}
-        {review.content && <p className="my-2.5">{review.content}</p>}
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleLike}>
-            {likes.is_liked ? '❤️' : '🤍'} {likes.count}
-          </Button>
-        </div>
-        <div className="flex flex-col gap-2 mt-2.5">
-          {comments.map(c=> (
-            <div key={c.id} className="bg-surface border border-primary-dark/16 px-2.5 py-2 rounded-lg text-sm flex justify-between items-center">
-              <div><b>{c.user?.username || c.user?.email}:</b> {c.content}</div>
-              {currentUser?.id === c.user_id && (
-                <Button variant="ghost" size="sm" onClick={()=>handleDeleteComment(c.id)}>삭제</Button>
-              )}
-            </div>
-          ))}
-          <CommentInput onSubmit={handleAddComment} />
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-// 댓글 입력 컴포넌트
-function CommentInput({onSubmit}){
-  const [v, setV] = useState('')
   return (
     <div className="flex gap-2">
       <Input
         className="flex-1"
         placeholder="댓글 달기"
-        value={v}
-        onChange={e=>setV(e.target.value)}
+        value={value}
+        onChange={e=>setValue(e.target.value)}
+        disabled={disabled || pending}
       />
-      <Button variant="ghost" size="sm" onClick={()=>{ onSubmit(v); setV('') }}>게시</Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={disabled || pending}
+        onClick={submit}
+      >
+        게시
+      </Button>
     </div>
   )
 }
