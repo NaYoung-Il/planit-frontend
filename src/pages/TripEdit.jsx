@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import Card from '../components/Card'
 import { useTrip } from '../hooks/useTrip'
 import { useAuth } from '../hooks/useAuth'
@@ -13,6 +13,7 @@ import Separator from '../components/ui/Separator'
 export default function TripEdit(){
   const { id } = useParams()
   const nav = useNavigate()
+  const location = useLocation()
   const isNew = !id
 
   const [trip,setTrip] = useState({
@@ -31,20 +32,30 @@ export default function TripEdit(){
       if(id){
         try {
           const t = await getTrip(id)
-          if(t) setTrip({
-            title: t.title,
-            destination: t.destination,
-            start_date: t.start_date,
-            end_date: t.end_date,
-            todo: t.todo || []
-          })
+          if(t) {
+            // 백엔드에서 받은 데이터를 프론트엔드 형식으로 변환
+            setTrip({
+              title: t.title || '',
+              destination: t.city?.name || '',
+              start_date: t.start_date ? t.start_date.split('T')[0] : '',
+              end_date: t.end_date ? t.end_date.split('T')[0] : '',
+              todo: t.todo || [],
+              city_id: t.city_id
+            })
+          }
         } catch (err) {
           console.error('여행 조회 실패:', err)
         }
+      } else if(location.state) {
+        // Home에서 전달받은 초기값 설정
+        setTrip(prev => ({
+          ...prev,
+          ...location.state
+        }))
       }
     }
     fetchTrip()
-  },[id])
+  },[id, location.state])
 
   const addTodo = ()=> setTrip(t=> ({...t, todo: [...t.todo, {id:crypto.randomUUID(), text:'', done:false}]}))
   const setTodo = (tid, patch)=> setTrip(t=> ({...t, todo: t.todo.map(it=> it.id===tid? {...it, ...patch}: it)}))
@@ -68,15 +79,20 @@ export default function TripEdit(){
       }
 
       if(isNew) {
-        // Remove destination field and add city_id for backend
-        const { destination, ...tripData } = trip
+        // Remove destination and todo fields, add city_id for backend
+        const { destination, todo, ...tripData } = trip
         await createTrip({
           ...tripData,
           user_id: user.id,
           city_id: city.id
         })
       } else {
-        await updateTrip(id, trip)
+        // For update, remove destination and todo, add city_id
+        const { destination, todo, ...tripData } = trip
+        await updateTrip(id, {
+          ...tripData,
+          city_id: city.id
+        })
       }
       nav('/trips')
     } catch (err) {

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Trips from './pages/Trips'
+import TripCreate from './pages/TripCreate'
 import TripEdit from './pages/TripEdit'
 import Login from './pages/Login'
 import Community from './pages/Community'
@@ -13,12 +14,12 @@ import Signup from './pages/Signup'
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}> 
+      <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/community" element={<Protected><Community/></Protected>} />
         <Route path="/profile" element={<Protected><Profile/></Protected>} />
         <Route path="/trips" element={<Protected><Trips /></Protected>} />
-        <Route path="/trips/new" element={<Protected><TripEdit /></Protected>} />
+        <Route path="/trips/new" element={<Protected><TripCreate /></Protected>} />
         <Route path="/trips/:id" element={<Protected><TripEdit /></Protected>} />
       </Route>
       <Route path="/login" element={<Login />} />

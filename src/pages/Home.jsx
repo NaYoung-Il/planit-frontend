@@ -3,8 +3,8 @@ import WeatherWidget from '../components/WeatherWidget'
 import CalMini from '../components/CalMini'
 import dayjs from 'dayjs'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useEvent } from '../hooks/useEvent'
-import { useTrip } from '../hooks/useTrip'
 import Button from '../components/ui/Button'
 import Empty from '../components/ui/Empty'
 import Badge from '../components/ui/Badge'
@@ -12,7 +12,7 @@ import Badge from '../components/ui/Badge'
 // Home : 캘린더/메모/빠른 여행 생성/날씨 위젯
 export default function Home(){
   const { listByMonth, addEvent: addEventHook, listEvents: listEventsHook, updateEvent: updateEventHook, removeEvent: removeEventHook } = useEvent()
-  const { createTrip } = useTrip()
+  const nav = useNavigate()
   const today = dayjs()
   const [month, setMonth] = useState(today)
   const [sel, setSel] = useState(today)
@@ -53,19 +53,22 @@ export default function Home(){
     setEvents(listByMonth(month.format('YYYY-MM')))
   }
 
-  const createTripFromRange = async ()=>{
+  const createTripFromRange = ()=>{
     if(!(range.start && range.end)) return alert('기간을 먼저 선택하세요.')
-    const tripData = {
-      title: `${range.start.format('MM.DD')}~${range.end.format('MM.DD')} 여행`,
-      start_date: range.start.format('YYYY-MM-DD'),
-      end_date: range.end.format('YYYY-MM-DD'),
-    }
-    try {
-      await createTrip(tripData)
-      alert('여행 일정이 생성되었습니다. 여행 메뉴에서 확인하세요.')
-    } catch (err) {
-      alert('여행 일정 생성에 실패했습니다.')
-    }
+    nav('/trips/new', {
+      state: {
+        start_date: range.start.format('YYYY-MM-DD'),
+        end_date: range.end.format('YYYY-MM-DD')
+      }
+    })
+  }
+
+  const goToTripEditWithCity = (cityName)=>{
+    nav('/trips/new', {
+      state: {
+        destination: cityName
+      }
+    })
   }
   return (
     <div className="grid gap-6 relative z-[1] mt-6" style={{gridTemplateColumns: '1fr 420px'}}>
@@ -78,7 +81,7 @@ export default function Home(){
                 { name: '두바이', days: 'Starting at', price: '', rating: '4.6', bg: 'bg-[linear-gradient(135deg,_#4fc3f7,_#29b6f6)]' },
                 { name: '몰디브', days: 'Starting at', price: '', rating: '4.8', bg: 'bg-[linear-gradient(135deg,_#26c6da,_#00acc1)]' },
               ].map((place, i) => (
-                <div key={i} className="w-auto bg-surface rounded-xl shadow-[0_10px_26px_rgba(0,0,0,0.07)] overflow-hidden border border-primary-dark/10 transition relative hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(0,0,0,0.16)]">
+                <div key={i} className="w-auto bg-surface rounded-xl shadow-[0_10px_26px_rgba(0,0,0,0.07)] overflow-hidden border border-primary-dark/10 transition relative hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(0,0,0,0.16)] cursor-pointer" onClick={()=>goToTripEditWithCity(place.name)}>
                   <div className={`relative h-[172px] ${place.bg} bg-cover bg-center`}>
                     <div className="absolute top-3 right-3 bg-black/65 text-white px-2.5 py-1.5 rounded-2xl text-xs font-semibold backdrop-blur">{place.rating}★</div>
                   </div>
