@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Community from './pages/Community'
 import Profile from './pages/Profile'
 import Protected from './components/Protected'
+import Signup from './pages/Signup'
 
 // App: 앱 라우팅, 인증 보호 라우트 적용
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/trips/:id" element={<Protected><TripEdit /></Protected>} />
       </Route>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
