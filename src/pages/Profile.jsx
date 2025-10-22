@@ -6,10 +6,11 @@ import Button from '../components/ui/Button'
 
 // Profile : 닉네임/아바타 편집
 export default function Profile(){
-  const { getCurrentUser, updateUser } = useAuth()
+  const { getCurrentUser, updateUser, uploadAvatar } = useAuth()
   const [name, setName] = useState('')
   const [avatar, setAvatar] = useState('')
   const [avatarFileName, setAvatarFileName] = useState('')
+  const [uploading, setUploading] = useState(false)
   const fileRef = useRef()
 
   useEffect(() => {
@@ -27,18 +28,39 @@ export default function Profile(){
 
   const save = async ()=>{
     try {
-      await updateUser({ username: name, avatar })
+      await updateUser({ username: name })
       alert('저장되었습니다')
     } catch (err) {
       alert('저장에 실패했습니다')
     }
   }
-  const onUpload = (f)=>{
+  
+  const onUpload = async (f)=>{
     if(!f) return
-    const reader = new FileReader();
-    reader.onload=()=> setAvatar(reader.result);
-    reader.readAsDataURL(f)
-    setAvatarFileName(f.name)
+    setUploading(true)
+    try {
+      // 백엔드 API 완성 후 주석 해제
+      // const result = await uploadAvatar(f)
+      // setAvatar(result.avatar_url || result.url)
+      
+      // 임시: 로컬 미리보기만 (백엔드 API 완성 되면 삭제 예정)
+      setAvatarFileName(f.name)
+      const reader = new FileReader()
+      reader.onload = () => setAvatar(reader.result)
+      reader.readAsDataURL(f)
+      
+      alert('미리보기 성공! (백엔드 API 추가 후 실제 업로드 가능)')
+    } catch (err) {
+      console.error('업로드 실패:', err)
+      alert('이미지 업로드에 실패했습니다')
+    } finally {
+      setUploading(false)
+    }
+  }
+  
+  const removeAvatar = () => {
+    setAvatar('')
+    setAvatarFileName('')
   }
   return (
     <Card title="프로필 편집" className="overflow-visible">
