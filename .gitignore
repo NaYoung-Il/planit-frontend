@@ -11,3 +11,6 @@ dist/
 # Editor/OS
 .DS_Store
 .vscode/
+
+# Backend folder (별도 저장소)
+backend/
