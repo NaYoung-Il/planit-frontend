@@ -6,6 +6,7 @@ export default function Protected({children}){
   const loc = useLocation()
 
   if(!token){
+    alert('비로그인 상태입니다. 로그인 페이지로 이동합니다.');
     return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   }
 

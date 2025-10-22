@@ -31,7 +31,7 @@ export default function Layout(){
     fetchUser()
   }, [loc.pathname])
   return (
-    <div className="grid h-screen overflow-hidden" style={{gridTemplateColumns: '280px 1fr'}}>
+    <div className="grid h-screen" style={{gridTemplateColumns: '280px 1fr'}}>
       <aside className="px-5 py-6 bg-gradient-sidebar backdrop-blur border-r border-primary-dark/12 relative overflow-hidden">
         <div className="font-bold text-2xl tracking-tight mb-8 text-sidebar-brand" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'}}>Plan‑it</div>
         <nav className="flex flex-col gap-2">
@@ -55,7 +55,7 @@ export default function Layout(){
           </NavLink>
         </nav>
       </aside>
-      <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex flex-col h-screen overflow-y-auto">
         <div className="bg-surface rounded-t-3xl mx-6 p-5 pb-6 backdrop-blur border border-primary-dark/12 relative">
           <header className="flex gap-4 items-center py-5 px-6 bg-bg-card backdrop-blur border-b border-primary-dark/15 sticky top-0 z-10">
             <div className="flex items-center gap-3 flex-1 min-w-[420px]">

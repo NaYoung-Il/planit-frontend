@@ -103,7 +103,7 @@ export default function Home(){
           <CalMini value={month} selected={sel} range={range} onPick={onPick} onChangeMonth={onChangeMonth} events={events} />
           <div className="text-text-soft text-xs mt-3">
             기간 선택: {range.start?range.start.format('MM.DD'):''} {range.end?`~ ${range.end.format('MM.DD')}`:''}</div>
-          <div className="text-text-soft text-xs flex items-center mt-2">
+          {/* <div className="text-text-soft text-xs flex items-center mt-2">
             해당일 메모
             <Button
               variant="ghost"
@@ -114,7 +114,7 @@ export default function Home(){
               + 추가
             </Button>
           </div>
-          <MemoList dateKey={sel.format('YYYY-MM-DD')} onEdit={editMemo} onDelete={delMemo} />
+          <MemoList dateKey={sel.format('YYYY-MM-DD')} onEdit={editMemo} onDelete={delMemo} /> */}
           {(range.start && range.end) && (
             <Button
               variant="primary"
@@ -134,24 +134,24 @@ export default function Home(){
   )
 }
 
-// 메모 리스트 컴포넌트
-function MemoList({dateKey, onEdit, onDelete}){
-  const { listEvents } = useEvent()
-  const items = listEvents(dateKey)
-  if(items.length===0) return (
-    <Empty message="메모가 없습니다." className="!py-3 !text-xs" />
-  )
-  return (
-    <div className="flex flex-col gap-2 p-2 rounded-lg bg-white/55 backdrop-blur border border-primary-dark/10 mt-1">
-      {items.map(m=> (
-        <div key={m.id} className="p-3 rounded-xl bg-surface border border-primary-dark/12 flex flex-col gap-2">
-          <div className="text-sm font-medium text-text">{m.text}</div>
-          <div className="flex gap-2 mt-1">
-            <Button variant="ghost" size="sm" className="!bg-gradient-primary !text-white !border-0" onClick={()=>onEdit(m.id)}>수정</Button>
-            <Button variant="danger" size="sm" onClick={()=>onDelete(m.id)}>삭제</Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
+// // 메모 리스트 컴포넌트
+// function MemoList({dateKey, onEdit, onDelete}){
+//   const { listEvents } = useEvent()
+//   const items = listEvents(dateKey)
+//   if(items.length===0) return (
+//     <Empty message="메모가 없습니다." className="!py-3 !text-xs" />
+//   )
+//   return (
+//     <div className="flex flex-col gap-2 p-2 rounded-lg bg-white/55 backdrop-blur border border-primary-dark/10 mt-1">
+//       {items.map(m=> (
+//         <div key={m.id} className="p-3 rounded-xl bg-surface border border-primary-dark/12 flex flex-col gap-2">
+//           <div className="text-sm font-medium text-text">{m.text}</div>
+//           <div className="flex gap-2 mt-1">
+//             <Button variant="ghost" size="sm" className="!bg-gradient-primary !text-white !border-0" onClick={()=>onEdit(m.id)}>수정</Button>
+//             <Button variant="danger" size="sm" onClick={()=>onDelete(m.id)}>삭제</Button>
+//           </div>
+//         </div>
+//       ))}
+//     </div>
+//   )
+// }

@@ -70,16 +70,6 @@ export default function Community(){
 
   useEffect(()=>()=>{ if(photoPreview) URL.revokeObjectURL(photoPreview) }, [photoPreview])
 
-  // 평점 입력값을 1~5 사이로 제한
-  const onRatingChange = (value)=>{
-    const parsed = Number(value)
-    if(Number.isNaN(parsed)){
-      setRating(1)
-      return
-    }
-    setRating(Math.min(5, Math.max(1, Math.floor(parsed))))
-  }
-
   // 선택한 파일을 미리보기/업로드용으로 보관
   const onUpload = (file)=>{
     if(!file) return
@@ -163,7 +153,7 @@ export default function Community(){
   return (
     <div className="grid gap-6 relative z-[1] mt-6 grid-cols-1">
       <div className="col-span-full">
-        <Card title="새 후기" subtitle="사진은 선택입니다.">
+        <Card title="새 후기">
           <form className="flex flex-col gap-3" onSubmit={submit}>
             <Input
               value={title}
@@ -171,21 +161,26 @@ export default function Community(){
               placeholder="제목을 입력하세요"
               required
             />
-            <div className="flex items-center gap-3 max-w-[200px]">
-              <Input
-                type="number"
-                min={1}
-                max={5}
-                value={rating}
-                onChange={e=>onRatingChange(e.target.value)}
-                placeholder="평점 (1~5)"
-              />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-text-soft">평점</span>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="text-xl text-yellow-500 transition-transform hover:scale-110 cursor-pointer"
+                  >
+                    {star <= rating ? '★' : '☆'}
+                  </button>
+                ))}
+              </div>
             </div>
             <textarea
               className="w-full min-h-[160px] rounded-lg p-4 bg-white/55 backdrop-blur border border-primary-dark/12 text-text text-sm leading-relaxed resize-y outline-none transition shadow-sm focus:border-primary focus:shadow-[0_0_0_3px_rgba(16,185,129,0.18)] focus:bg-white/70 placeholder:text-text-soft/70"
               value={text}
               onChange={e=>setText(e.target.value)}
-              placeholder="여행 후기를 적어주세요..."
+              placeholder="여행 후기를 적어주세요"
             />
             <div className="flex items-center gap-2.5 w-full max-w-[520px]">
               <button type="button" className="px-3.5 py-2.5 rounded-xl bg-gradient-primary text-white border-0 shadow-sm text-sm" onClick={()=>fileRef.current?.click()}>파일 선택</button>

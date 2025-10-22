@@ -3,7 +3,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Trips from './pages/Trips'
 import TripCreate from './pages/TripCreate'
-import TripEdit from './pages/TripEdit'
+import TripInfoEdit from './pages/TripInfoEdit'
 import Login from './pages/Login'
 import Community from './pages/Community'
 import Profile from './pages/Profile'
@@ -20,7 +20,7 @@ export default function App() {
         <Route path="/profile" element={<Protected><Profile/></Protected>} />
         <Route path="/trips" element={<Protected><Trips /></Protected>} />
         <Route path="/trips/new" element={<Protected><TripCreate /></Protected>} />
-        <Route path="/trips/:id" element={<Protected><TripEdit /></Protected>} />
+        <Route path="/trips/:id" element={<Protected><TripInfoEdit /></Protected>} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
