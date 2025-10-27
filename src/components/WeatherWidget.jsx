@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { useWeather } from '../hooks/useWeather'
 
 // 현재 날씨를 조회/표시, API 키 없으면 '목업' 데이터로 대체
-export default function WeatherWidget({city='Seoul'}){
+export default function WeatherWidget({ city = 'Seoul', lat=37.566, lon=126.978 }) {
   const { getWeather } = useWeather()
   const [data,setData] = useState(null)
   const [theme,setTheme] = useState('clear')
 
   useEffect(()=>{
     let on = true
-    getWeather(city).then(w=>{
+    getWeather(city, lat, lon).then(w=>{
       if(!on) return
       setData(w)
       const code = (w.main||'').toLowerCase()
@@ -18,7 +18,7 @@ export default function WeatherWidget({city='Seoul'}){
       else setTheme('sand')
     })
     return ()=>{ on=false }
-  },[city])
+  },[city, lat, lon])
 
   if(!data){
     return <div className="rounded-xl text-text-soft p-7 min-h-[120px] bg-bg-widget backdrop-blur">날씨 불러오는 중...</div>
@@ -45,12 +45,26 @@ export default function WeatherWidget({city='Seoul'}){
         <div className="bg-white/25 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur">🌬️ {data.wind} m/s</div>
         <div className="bg-white/25 px-2.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur">☁️ {data.clouds}%</div>
       </div>
-      <div className="grid grid-cols-6 gap-2.5 relative z-10">
-        {data.hourly.slice(0,6).map((h,i)=> (
-          <div key={i} className="bg-emerald-50/90 px-2.5 py-2 text-center rounded-xl backdrop-blur">
-            <div className="text-xs opacity-90">{h.t}</div>
-            <div>{h.i}</div>
-            <div className="font-bold mt-0.5 text-sm">{Math.round(h.temp)}°</div>
+      {/* ⬇️ [수정] 주간 예보 섹션 */}
+      <div className="grid grid-cols-6 gap-2.5 relative z-10"> 
+        {/* 6일치 (내일 + 5일) */}
+        {data.daily.slice(1, 7).map((d, i) => ( 
+          <div key={i} className="bg-emerald-50/90 px-2 py-2 text-center rounded-xl backdrop-blur">
+            {/* 요일 */}
+            <div className="text-xs opacity-90">{d.day}</div>
+            {/* 아이콘 */}
+            <img 
+              src={`http://openweathermap.org/img/wn/${d.icon}.png`} 
+              alt="icon"
+              className="w-8 h-8 mx-auto" 
+            />
+            {/* 최고/최저 기온 */}
+            <div className="font-bold mt-0.5 text-xs">
+              {Math.round(d.temp_max)}°
+            </div>
+            <div className="text-xs opacity-70">
+              {Math.round(d.temp_min)}°
+            </div>
           </div>
         ))}
       </div>
