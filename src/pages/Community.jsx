@@ -115,7 +115,7 @@ export default function Community(){
         title: title.trim(),
         content: text.trim(),
         rating,
-      }, selectedTripId)
+      }, selectedTripId, photoFile)
       resetForm()
       await refresh()
     }catch(err){
@@ -228,6 +228,7 @@ export default function Community(){
             <input ref={fileRef} type="file" accept="image/*" onChange={e=>onUpload(e.target.files?.[0])} className="hidden" />
             {photoPreview && <img className="mt-2 max-h-[220px] max-w-full object-contain rounded-xl shadow" src={photoPreview} alt="preview" />}
             {!isAuthed && <p className="text-xs text-text-soft">로그인 후 등록할 수 있습니다.</p>}
+            {isAuthed && userTrips.length === 0 && <p className="text-xs text-yellow-600">여행 계획을 먼저 생성해주세요.</p>}
             <Button variant="primary" type="submit" disabled={!isAuthed || userTrips.length === 0}>올리기</Button>
           </form>
         </Card>

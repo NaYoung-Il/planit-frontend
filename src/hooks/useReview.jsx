@@ -5,12 +5,27 @@ export const useReview = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // 리뷰 작성
-  const createReview = async (reviewData, tripId) => {
+  // 리뷰 작성 (이미지 업로드 지원)
+  const createReview = async (reviewData, tripId, photoFile = null) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await api.post(`/reviews/?trip_id=${tripId}`, reviewData)
+      const formData = new FormData()
+      formData.append('title', reviewData.title)
+      formData.append('content', reviewData.content)
+      formData.append('rating', reviewData.rating)
+      
+      // 이미지 파일이 있으면 추가 (file -> photo로 변경)
+      if (photoFile) {
+        formData.append('file', photoFile)
+      }
+
+      // trip_id는 쿼리 파라미터로만 전달
+      const response = await api.post(`/reviews/?trip_id=${tripId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
       return response.data
     } catch (err) {
       setError(err.response?.data?.detail || '리뷰 작성 실패')
