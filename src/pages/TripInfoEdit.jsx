@@ -9,13 +9,6 @@ import { useCity } from '../hooks/useCity'
 import { useAuth } from '../hooks/useAuth'
 import dayjs from 'dayjs'
 
-const MOCK_COUNTRIES = ['일본', '미국', '중국']
-const MOCK_CITIES = {
-  '일본': ['오사카', '도쿄'],
-  '미국': ['워싱턴', '뉴욕'],
-  '중국': ['상하이', '베이징']
-}
-
 export default function TripInfoEdit() {
   const nav = useNavigate()
   const { id } = useParams()
@@ -29,15 +22,22 @@ export default function TripInfoEdit() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // Step 2: 도시별 일정
+  // 나라/도시 목록
+  const [countries, setCountries] = useState([])
+  const [cities, setCities] = useState([])
+
+  // Step 2: 도시별 일정 
   const [citySchedules, setCitySchedules] = useState([
-    { id: crypto.randomUUID(), city: '', startDate: '', endDate: '' }
+    { id: crypto.randomUUID(), city: '', ko_name: '', startDate: '', endDate: '' }
   ])
 
   // Step 3: 일자별 상세 일정
   const [dayDetails, setDayDetails] = useState({})
   const [expandedDay, setExpandedDay] = useState(null)
   const [tripDays, setTripDays] = useState([])
+
+  // 여행별 체크리스트
+  const [checklists, setChecklists] = useState([])
 
   // 원본 데이터 보관 (변경 감지용)
   const [originalData, setOriginalData] = useState({
@@ -62,8 +62,32 @@ export default function TripInfoEdit() {
     deleteChecklistItem,
     loading
   } = useTrip()
-  const { getCity } = useCity()
+  const { getCity, getAllCities } = useCity()
   const { getCurrentUser } = useAuth()
+
+  // 나라/도시 목록 로드
+  useEffect(() => {
+    const fetchCitiesData = async () => {
+      const allCities = await getAllCities()
+      // ko_country 필드에서 중복 제거 후 정렬
+      const countryList = [...new Set(allCities.map(city => city.ko_country).filter(Boolean))].sort()
+      setCountries(countryList)
+    }
+    fetchCitiesData()
+  }, [])
+
+  // 선택된 나라에 따라 도시 목록 필터링
+  useEffect(() => {
+    const fetchFilteredCities = async () => {
+      if (country) {
+        const allCities = await getAllCities()
+        // ko_country와 일치하는 도시만 필터링
+        const filteredCities = allCities.filter(city => city.ko_country === country)
+        setCities(filteredCities)
+      }
+    }
+    fetchFilteredCities()
+  }, [country])
 
   // 데이터 로드
   useEffect(() => {
@@ -76,25 +100,25 @@ export default function TripInfoEdit() {
 
       const trip = await getTrip(id)
       setTripName(trip.title)
-      setCountry(trip.country || 'trip.country')
-      setStartDate(trip.start_date)
-      setEndDate(trip.end_date)
 
       const fetchedTripDays = await getTripDays(id)
       setTripDays(fetchedTripDays)
 
-      // citySchedules 복원 (현재 백엔드 구조상 Trip의 city_id만 사용 가능)
+      // citySchedules 복원
       const city = await getCity(trip.city_id)
-      const cityName = city.city_name
+      setCountry(city.ko_country)
 
       // TripDay 날짜 범위로 citySchedules 추정
       const restoredCitySchedules = fetchedTripDays.length > 0 ? [{
         id: crypto.randomUUID(),
-        city: cityName,
+        city: city.city_name,
+        ko_name: city.ko_name,
         startDate: fetchedTripDays[0].day_date,
         endDate: fetchedTripDays[fetchedTripDays.length - 1].day_date
-      }] : [{ id: crypto.randomUUID(), city: '', startDate: '', endDate: '' }]
+      }] : [{ id: crypto.randomUUID(), city: '', ko_name: '', startDate: '', endDate: '' }]
 
+      setStartDate(trip.start_date)
+      setEndDate(trip.end_date)
       setCitySchedules(restoredCitySchedules)
 
       // // citySchedules 복원 (TripDay에서 도시 정보 가져오기) - TripDay에 city_id 없음
@@ -125,26 +149,28 @@ export default function TripInfoEdit() {
         citySchedules: JSON.parse(JSON.stringify(restoredCitySchedules))
       })
 
-      const checklists = await getChecklistItemsByTrip(id)
-      const allDayDetails = {}
+      // 체크리스트 조회
+      const fetchedChecklists = await getChecklistItemsByTrip(id)
+      setChecklists(fetchedChecklists.map(item => ({
+        ...item,
+        id: item.id || crypto.randomUUID(),
+        isNew: false
+      })))
 
+      // 일자별 일정 조회
+      const allDayDetails = {}
       for (const tripDay of fetchedTripDays) {
         const date = tripDay.day_date
         const schedules = await getSchedulesByDay(tripDay.id)
 
         allDayDetails[date] = {
           tripDayId: tripDay.id,
-          checklists: checklists.map(item => ({
-            ...item,
-            id: item.id || crypto.randomUUID(),
-            isNew: false
-          })),
           schedules: schedules.map(schedule => ({
             ...schedule,
             id: schedule.id || crypto.randomUUID(),
-            start_time: schedule.start_time || '',
-            end_time: schedule.end_time || '',
-            place: schedule.place_id || '',
+            start_time: schedule.start_time,
+            end_time: schedule.end_time,
+            place: schedule.place_id,
             isNew: false
           }))
         }
@@ -170,7 +196,7 @@ export default function TripInfoEdit() {
         while (current.isBefore(end) || current.isSame(end, 'day')) {
           days.push({
             date: current.format('YYYY-MM-DD'),
-            city: schedule.city,
+            city: schedule.ko_name, // 한글명 출력
             dayNumber: days.length + 1
           })
           current = current.add(1, 'day')
@@ -221,6 +247,7 @@ export default function TripInfoEdit() {
     setCitySchedules([...citySchedules, {
       id: crypto.randomUUID(),
       city: '',
+      ko_name: '',
       startDate: '',
       endDate: ''
     }])
@@ -254,39 +281,24 @@ export default function TripInfoEdit() {
   }
 
   // Step 3 핸들러
-  const addCheck = (date) => {
-    setDayDetails(prev => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        checklists: [
-          ...(prev[date]?.checklists || []),
-          { id: crypto.randomUUID(), is_checked: false, item_name: '', isNew: true }
-        ]
-      }
-    }))
+  // 체크리스트 추가
+  const addCheck = () => {
+    setChecklists([
+      ...checklists,
+      { id: crypto.randomUUID(), is_checked: false, item_name: '', isNew: true }
+    ])
   }
 
-  const handleUpdateCheck = (date, itemId, field, value) => {
-    setDayDetails(prev => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        checklists: (prev[date]?.checklists || []).map(item =>
-          item.id === itemId ? { ...item, [field]: value } : item
-        )
-      }
-    }))
+  // 체크리스트 업데이트
+  const handleUpdateCheck = (itemId, field, value) => {
+    setChecklists(checklists.map(item =>
+      item.id === itemId ? { ...item, [field]: value } : item
+    ))
   }
 
-  const handleRemoveCheck = (date, itemId) => {
-    setDayDetails(prev => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        checklists: (prev[date]?.checklists || []).filter(item => item.id !== itemId)
-      }
-    }))
+  // 체크리스트 삭제
+  const handleRemoveCheck = (itemId) => {
+    setChecklists(checklists.filter(item => item.id !== itemId))
   }
 
   const addSchedule = (date) => {
@@ -367,13 +379,22 @@ export default function TripInfoEdit() {
           }
         }
 
-        const checklists = await getChecklistItemsByTrip(id)
-        for (const checklist of checklists) {
+        // 체크리스트 삭제
+        const oldChecklists = await getChecklistItemsByTrip(id)
+        for (const checklist of oldChecklists) {
           await deleteChecklistItem(checklist.id)
         }
 
-        // TripDay는 백엔드에서 cascade delete되지 않으므로 직접 삭제 필요 (API 확인 필요)
-        // 여기서는 재생성만 진행
+        // 체크리스트 재생성
+        for (const item of checklists) {
+          if (item.item_name.trim()) {
+            await createChecklistItem({
+              trip_id: parseInt(id),
+              item_name: item.item_name,
+              is_checked: item.is_checked
+            })
+          }
+        }
 
         // 새로운 데이터 생성
         const daysList = getDaysList()
@@ -383,17 +404,6 @@ export default function TripInfoEdit() {
             day_sequence: day.dayNumber,
             day_date: day.date
           })
-
-          const checklists = dayDetails[day.date]?.checklists || []
-          for (const item of checklists) {
-            if (item.item_name.trim()) {
-              await createChecklistItem({
-                trip_id: parseInt(id),
-                item_name: item.item_name,
-                is_checked: item.is_checked
-              })
-            }
-          }
 
           const schedules = dayDetails[day.date]?.schedules || []
           for (const schedule of schedules) {
@@ -410,27 +420,27 @@ export default function TripInfoEdit() {
           }
         }
       } else {
-        // 체크리스트, 스케줄만 수정
-        for (const date in dayDetails) {
-          const details = dayDetails[date]
-
-          // 체크리스트
-          for (const item of details.checklists || []) {
-            if (item.isNew) {
-              if (item.item_name.trim()) {
-                await createChecklistItem({
-                  trip_id: parseInt(id),
-                  item_name: item.item_name,
-                  is_checked: item.is_checked
-                })
-              }
-            } else {
-              await updateChecklistItem(item.id, {
+        // 체크리스트 수정
+        for (const item of checklists) {
+          if (item.isNew) {
+            if (item.item_name.trim()) {
+              await createChecklistItem({
+                trip_id: parseInt(id),
                 item_name: item.item_name,
                 is_checked: item.is_checked
               })
             }
+          } else {
+            await updateChecklistItem(item.id, {
+              item_name: item.item_name,
+              is_checked: item.is_checked
+            })
           }
+        }
+
+        // 스케줄만 수정
+        for (const date in dayDetails) {
+          const details = dayDetails[date]
 
           // 스케줄
           for (const schedule of details.schedules || []) {
@@ -508,7 +518,7 @@ export default function TripInfoEdit() {
             <div className="flex flex-col gap-3">
               <div>
                 <span className="text-sm text-text-soft">🚩</span>
-                <p className="text-text text-lg mt-1">{country || 'trip.country'}</p>
+                <p className="text-text text-lg mt-1">{country}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -534,7 +544,7 @@ export default function TripInfoEdit() {
                 <label className="block text-sm font-semibold text-text mb-2">나라 *</label>
                 <input
                   type="text"
-                  value={country || 'trip.country'}
+                  value={country}
                   disabled
                   className="w-full px-4 py-2.5 rounded-lg border border-primary-dark/20 bg-gray-100 text-text-soft text-sm cursor-not-allowed"
                   title="나라 변경은 지원되지 않습니다. 새 여행을 생성해주세요."
@@ -604,14 +614,23 @@ export default function TripInfoEdit() {
                       <label className="block text-xs font-semibold text-text mb-1">도시</label>
                       <select
                         value={schedule.city}
-                        onChange={e => updateCitySchedule(schedule.id, 'city', e.target.value)}
+                        onChange={e => {
+                          const selectedCity = cities.find(c => c.city_name === e.target.value)
+                          // city(city_name)와 ko_name 모두 저장
+                          setCitySchedules(citySchedules.map(s =>
+                            s.id === schedule.id
+                              ? { ...s, city: e.target.value, ko_name: selectedCity?.ko_name }
+                              : s
+                          ))
+                        }}
                         required
                         className="w-full px-3 py-2 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
                         disabled={!country}
                       >
                         <option value="">도시 선택</option>
-                        {country && MOCK_CITIES[country]?.map(city => (
-                          <option key={city} value={city}>{city}</option>
+                        {/* value는 city_name(영문), 화면 표시는 ko_name(한글) */}
+                        {cities.map(city => (
+                          <option key={city.id} value={city.city_name}>{city.ko_name}</option>
                         ))}
                       </select>
                     </div>
@@ -665,6 +684,56 @@ export default function TripInfoEdit() {
 
         <Separator />
 
+        {/* Step 3: 준비물 체크리스트 */}
+        <h3 className="text-lg font-semibold text-text">준비물 체크리스트</h3>
+        <div className="border border-primary-dark/20 rounded-lg bg-white p-4">
+          <p className="text-sm text-text-soft mb-4"></p>
+          <div className="flex flex-col gap-2 mb-3">
+            {checklists.map((item) => (
+              <div key={item.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={item.is_checked}
+                  onChange={(e) => handleUpdateCheck(item.id, 'is_checked', e.target.checked)}
+                  className="w-4 h-4 rounded border-primary-dark/20"
+                  disabled={!isEditMode}
+                />
+                <input
+                  type="text"
+                  value={item.item_name}
+                  onChange={(e) => handleUpdateCheck(item.id, 'item_name', e.target.value)}
+                  placeholder="준비물 이름"
+                  className="flex-1 px-3 py-2 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
+                  disabled={!isEditMode}
+                />
+                {isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCheck(item.id)}
+                    className="text-lg hover:scale-110 transition-transform px-2"
+                    title="삭제"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {isEditMode && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={addCheck}
+              className="text-sm"
+            >
+              + 항목 추가하기
+            </Button>
+          )}
+        </div>
+
+        <Separator />
+
         {/* Step 3: 일별 스케줄 */}
         <div>
           <h3 className="text-lg font-semibold text-text mb-4">일별 스케줄</h3>
@@ -688,56 +757,8 @@ export default function TripInfoEdit() {
 
                 {expandedDay === day.date && (
                   <div className="px-4 py-4 border-t border-primary-dark/10 bg-white/50">
-                    {/* 체크리스트 */}
-                    <div className="mb-6">
-                      <h4 className="text-md font-semibold text-text mb-3">체크리스트</h4>
-                      <div className="flex flex-col gap-2 mb-3">
-                        {(dayDetails[day.date]?.checklists || []).map((item) => (
-                          <div key={item.id} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={item.is_checked}
-                              onChange={(e) => handleUpdateCheck(day.date, item.id, 'is_checked', e.target.checked)}
-                              className="w-4 h-4 rounded border-primary-dark/20"
-                              disabled={!isEditMode}
-                            />
-                            <input
-                              type="text"
-                              value={item.item_name}
-                              onChange={(e) => handleUpdateCheck(day.date, item.id, 'item_name', e.target.value)}
-                              placeholder="준비물 이름"
-                              className="flex-1 px-3 py-2 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
-                              disabled={!isEditMode}
-                            />
-                            {isEditMode && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveCheck(day.date, item.id)}
-                                className="text-lg hover:scale-110 transition-transform px-2"
-                                title="삭제"
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {isEditMode && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => addCheck(day.date)}
-                          className="text-sm"
-                        >
-                          + 항목 추가하기
-                        </Button>
-                      )}
-                    </div>
-
-                    <Separator />
-
                     {/* 시간별 일정 */}
-                    <div className="mt-6">
+                    <div>
                       <h4 className="text-md font-semibold text-text mb-3">시간별 일정</h4>
                       <div className="flex flex-col gap-3 mb-3">
                         {(dayDetails[day.date]?.schedules || []).map((schedule) => (

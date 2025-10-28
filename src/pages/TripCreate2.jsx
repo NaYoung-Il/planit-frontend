@@ -1,13 +1,8 @@
+import { useState, useEffect } from 'react'
 import Button from '../components/ui/Button'
 import Separator from '../components/ui/Separator'
 import dayjs from 'dayjs'
-
-// 목업 데이터
-const MOCK_CITIES = {
-  '일본': ['오사카', '도쿄'],
-  '미국': ['워싱턴', '뉴욕'],
-  '중국': ['상하이', '베이징']
-}
+import { useCity } from '../hooks/useCity'
 
 // TripCreate2: Step 2 - 도시 선택
 export default function TripCreate2({
@@ -19,10 +14,26 @@ export default function TripCreate2({
   onNext,
   onPrevious
 }) {
+  const [cities, setCities] = useState([])
+  const { getAllCities } = useCity()
+
+  // 선택된 나라에 해당하는 도시 목록 조회
+  useEffect(() => {
+    const fetchCities = async () => {
+      const allCities = await getAllCities()
+      // 선택된 나라(ko_country)와 일치하는 도시만 필터링
+      const filteredCities = allCities.filter(city => city.ko_country === country)
+      setCities(filteredCities)
+    }
+    if (country) {
+      fetchCities()
+    }
+  }, [country])
   const addCitySchedule = () => {
     setCitySchedules([...citySchedules, {
       id: crypto.randomUUID(),
       city: '',
+      ko_name: '',
       startDate: '',
       endDate: ''
     }])
@@ -80,14 +91,23 @@ export default function TripCreate2({
               <label className="block text-xs font-semibold text-text mb-1">도시</label>
               <select
                 value={schedule.city}
-                onChange={e => updateCitySchedule(schedule.id, 'city', e.target.value)}
+                onChange={e => {
+                  const selectedCity = cities.find(c => c.city_name === e.target.value)
+                  // city(city_name 영문명)와 ko_name(한글명) 모두 저장
+                  setCitySchedules(citySchedules.map(s =>
+                    s.id === schedule.id
+                      ? { ...s, city: e.target.value, ko_name: selectedCity?.ko_name }
+                      : s
+                  ))
+                }}
                 required
                 className="w-full px-3 py-2 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
                 disabled={!country}
               >
                 <option value="">도시 선택</option>
-                {country && MOCK_CITIES[country]?.map(city => (
-                  <option key={city} value={city}>{city}</option>
+                {/* value는 city_name(영문), 화면 표시는 ko_name(한글) */}
+                {cities.map(city => (
+                  <option key={city.id} value={city.city_name}>{city.ko_name}</option>
                 ))}
               </select>
             </div>

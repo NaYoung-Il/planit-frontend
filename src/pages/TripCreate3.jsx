@@ -7,6 +7,7 @@ export default function TripCreate3({
   dayDetails,
   expandedDay,
   setExpandedDay,
+  checklists,
   onAddCheck,
   onUpdateCheck,
   onRemoveCheck,
@@ -19,6 +20,52 @@ export default function TripCreate3({
 }) {
   return (
     <div className="flex flex-col gap-4">
+      {/* 여행 전체 체크리스트 섹션 */}
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-text mb-2">여행 체크리스트</h3>
+        <p className="text-sm text-text-soft mb-4">여행 전체에 필요한 준비물을 작성해주세요. (선택사항)</p>
+
+        {/* 체크리스트 항목들 */}
+        <div className="flex flex-col gap-2 mb-3">
+          {checklists.map((item) => (
+            <div key={item.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={item.is_checked}
+                onChange={(e) => onUpdateCheck(item.id, 'is_checked', e.target.checked)}
+                className="w-4 h-4 rounded border-primary-dark/20"
+              />
+              <input
+                type="text"
+                value={item.item_name}
+                onChange={(e) => onUpdateCheck(item.id, 'item_name', e.target.value)}
+                placeholder="준비물 이름"
+                className="flex-1 px-3 py-2 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={() => onRemoveCheck(item.id)}
+                className="text-lg hover:scale-110 transition-transform px-2"
+                title="삭제"
+              >
+                🗑️
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onAddCheck}
+          className="text-sm"
+        >
+          + 항목 추가하기
+        </Button>
+      </div>
+
+      <Separator />
+
       <h3 className="text-lg font-semibold text-text">일별 스케줄</h3>
       <p className="text-sm text-text-soft">일별 세부 일정을 작성해주세요. (선택사항)</p>
 
@@ -37,7 +84,7 @@ export default function TripCreate3({
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-text">{day.dayNumber}일차</span>
                 <span className="text-sm text-text-soft">{day.date}</span>
-                <span className="text-sm text-primary font-medium">{day.city}</span>
+          
               </div>
               <span className="text-text-soft">
                 {expandedDay === day.date ? '▲' : '▼'}
@@ -47,53 +94,8 @@ export default function TripCreate3({
             {/* 확장된 내용 */}
             {expandedDay === day.date && (
               <div className="px-4 py-4 border-t border-primary-dark/10 bg-white/50">
-                {/* 체크리스트 섹션 */}
-                <div className="mb-6">
-                  <h4 className="text-md font-semibold text-text mb-3">체크리스트</h4>
-
-                  {/* 체크리스트 항목들 */}
-                  <div className="flex flex-col gap-2 mb-3">
-                    {(dayDetails[day.date]?.checklists || []).map((item) => (
-                      <div key={item.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={item.is_checked}
-                          onChange={(e) => onUpdateCheck(day.date, item.id, 'is_checked', e.target.checked)}
-                          className="w-4 h-4 rounded border-primary-dark/20"
-                        />
-                        <input
-                          type="text"
-                          value={item.item_name}
-                          onChange={(e) => onUpdateCheck(day.date, item.id, 'item_name', e.target.value)}
-                          placeholder="준비물 이름"
-                          className="flex-1 px-3 py-2 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => onRemoveCheck(day.date, item.id)}
-                          className="text-lg hover:scale-110 transition-transform px-2"
-                          title="삭제"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => onAddCheck(day.date)}
-                    className="text-sm"
-                  >
-                    + 항목 추가하기
-                  </Button>
-                </div>
-
-                <Separator />
-
                 {/* 시간별 일정 섹션 */}
-                <div className="mt-6">
+                <div>
                   <h4 className="text-md font-semibold text-text mb-3">시간별 일정</h4>
 
                   {/* 일정 항목들 */}

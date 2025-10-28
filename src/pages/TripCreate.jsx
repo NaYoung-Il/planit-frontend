@@ -22,14 +22,17 @@ export default function TripCreate() {
   const [startDate, setStartDate] = useState(location.state?.start_date || '')
   const [endDate, setEndDate] = useState(location.state?.end_date || '')
 
-  // 도시별 일정
+  // 도시별 일정 (city: city_name 영문명, ko_name: 한글명)
   const [citySchedules, setCitySchedules] = useState([
-    { id: crypto.randomUUID(), city: '', startDate: '', endDate: '' }
+    { id: crypto.randomUUID(), city: '', ko_name: '', startDate: '', endDate: '' }
   ])
 
   // Step 3: 일자별 상세 일정
   const [dayDetails, setDayDetails] = useState({})
   const [expandedDay, setExpandedDay] = useState(null)
+
+  // 여행별 체크리스트
+  const [checklists, setChecklists] = useState([])
 
   const {
     createTrip,
@@ -39,7 +42,7 @@ export default function TripCreate() {
     loading
   } = useTrip()
   const { getCurrentUser } = useAuth()
-  const { getCityByName, createCity } = useCity()
+  const { getCityByName } = useCity()
 
   // 일자별 목록 생성
   const getDaysList = () => {
@@ -51,7 +54,7 @@ export default function TripCreate() {
         while (current.isBefore(end) || current.isSame(end, 'day')) {
           days.push({
             date: current.format('YYYY-MM-DD'),
-            city: schedule.city,
+            city: schedule.ko_name, // 한글명 출력
             dayNumber: days.length + 1
           })
           current = current.add(1, 'day')
@@ -61,42 +64,24 @@ export default function TripCreate() {
     return days
   }
 
-  // 체크리스트 추가
-  const addCheck = (date) => {
-    setDayDetails(prev => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        checklists: [
-          ...(prev[date]?.checklists || []),
-          { id: crypto.randomUUID(), is_checked: false, item_name: '' }
-        ]
-      }
-    }))
+  // 체크리스트 추가 (여행별)
+  const addCheck = () => {
+    setChecklists([
+      ...checklists,
+      { id: crypto.randomUUID(), is_checked: false, item_name: '' }
+    ])
   }
 
-  // 체크리스트 업데이트
-  const handleUpdateCheck = (date, itemId, field, value) => {
-    setDayDetails(prev => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        checklists: (prev[date]?.checklists || []).map(item =>
-          item.id === itemId ? { ...item, [field]: value } : item
-        )
-      }
-    }))
+  // 체크리스트 업데이트 (여행별)
+  const handleUpdateCheck = (itemId, field, value) => {
+    setChecklists(checklists.map(item =>
+      item.id === itemId ? { ...item, [field]: value } : item
+    ))
   }
 
-  // 체크리스트 삭제
-  const handleRemoveCheck = (date, itemId) => {
-    setDayDetails(prev => ({
-      ...prev,
-      [date]: {
-        ...prev[date],
-        checklists: (prev[date]?.checklists || []).filter(item => item.id !== itemId)
-      }
-    }))
+  // 체크리스트 삭제 (여행별)
+  const handleRemoveCheck = (itemId) => {
+    setChecklists(checklists.filter(item => item.id !== itemId))
   }
 
   // 일정 추가
@@ -138,69 +123,60 @@ export default function TripCreate() {
   }
 
   const handleSubmit = async () => {
-    try {
-      const user = await getCurrentUser()
-      const mainCityName = citySchedules[0].city
+    const user = await getCurrentUser()
+    const mainCityName = citySchedules[0].city
 
-      let city = null
-      try {
-        city = await getCityByName(mainCityName)
-      } catch (err) {
-        city = await createCity({
-          name: mainCityName,
-          country: country
+    // 선택한 도시 정보 조회 (city_name으로 검색)
+    const city = await getCityByName(mainCityName)
+
+    // 여행 기본 정보 생성
+    const trip = await createTrip({
+      title: tripName,
+      start_date: startDate,
+      end_date: endDate,
+      user_id: user.id,
+      city_id: city.id
+    })
+
+    const daysList = getDaysList()
+
+    // 체크리스트 항목 저장 (여행별)
+    for (const item of checklists) {
+      if (item.item_name.trim()) {
+        await createChecklistItem({
+          trip_id: trip.id,
+          item_name: item.item_name,
+          is_checked: item.is_checked
         })
       }
+    }
 
-      const trip = await createTrip({
-        title: tripName,
-        start_date: startDate,
-        end_date: endDate,
-        user_id: user.id,
-        city_id: city.id
+    // 일자별 상세 정보 저장
+    for (const day of daysList) {
+      // 일자별 여행 계획 생성
+      const tripDay = await createTripDay({
+        trip_id: trip.id,
+        day_sequence: day.dayNumber,
+        day_date: day.date
       })
 
-      const daysList = getDaysList()
-
-      for (const day of daysList) {
-        const tripDay = await createTripDay({
-          trip_id: trip.id,
-          day_sequence: day.dayNumber,
-          day_date: day.date
-        })
-
-        const checklists = dayDetails[day.date]?.checklists || []
-        for (const item of checklists) {
-          if (item.item_name.trim()) {
-            await createChecklistItem({
-              trip_id: trip.id,
-              item_name: item.item_name,
-              is_checked: item.is_checked
-            })
-          }
-        }
-
-        const schedules = dayDetails[day.date]?.schedules || []
-        for (const schedule of schedules) {
-          if (schedule.schedule_content.trim()) {
-            await createSchedule({
-              trip_day_id: tripDay.id,
-              schedule_content: schedule.schedule_content,
-              start_time: schedule.start_time || null,
-              end_time: schedule.end_time || null,
-              place_id: null,
-              schedule_datetime: new Date().toISOString()
-            })
-          }
+      // 세부 일정 저장
+      const schedules = dayDetails[day.date]?.schedules || []
+      for (const schedule of schedules) {
+        if (schedule.schedule_content.trim()) {
+          await createSchedule({
+            trip_day_id: tripDay.id,
+            schedule_content: schedule.schedule_content,
+            start_time: schedule.start_time || null,
+            end_time: schedule.end_time || null,
+            place_id: null,
+            schedule_datetime: new Date().toISOString()
+          })
         }
       }
-
-      alert('여행이 성공적으로 생성되었습니다!')
-      nav('/trips')
-    } catch (err) {
-      console.error('여행 생성 오류:', err)
-      alert('여행 생성에 실패했습니다: ' + err.message)
     }
+
+    nav('/trips')
   }
 
   return (
@@ -237,6 +213,7 @@ export default function TripCreate() {
           dayDetails={dayDetails}
           expandedDay={expandedDay}
           setExpandedDay={setExpandedDay}
+          checklists={checklists}
           onAddCheck={addCheck}
           onUpdateCheck={handleUpdateCheck}
           onRemoveCheck={handleRemoveCheck}

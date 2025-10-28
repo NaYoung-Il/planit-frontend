@@ -1,8 +1,7 @@
+import { useState, useEffect } from 'react'
 import FormField from '../components/ui/FormField'
 import Button from '../components/ui/Button'
-
-// 목업 데이터
-const MOCK_COUNTRIES = ['일본', '미국', '중국']
+import { useCity } from '../hooks/useCity'
 
 // TripCreate1: Step 1 - 기본 정보 입력
 export default function TripCreate1({
@@ -16,6 +15,20 @@ export default function TripCreate1({
   setEndDate,
   onNext
 }) {
+  const [countries, setCountries] = useState([])
+  const { getAllCities } = useCity()
+
+  // 백엔드에서 도시 목록 조회하여 나라 목록 생성
+  useEffect(() => {
+    const fetchCountries = async () => {
+      const cities = await getAllCities()
+      // ko_country 필드에서 중복 제거 후 정렬
+      const countryList = [...new Set(cities.map(city => city.ko_country).filter(Boolean))].sort()
+      setCountries(countryList)
+    }
+    fetchCountries()
+  }, [])
+
   const isValid = tripName.trim() && country && startDate && endDate
 
   return (
@@ -37,8 +50,8 @@ export default function TripCreate1({
           className="w-full px-4 py-2.5 rounded-lg border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           <option value="">나라를 선택하세요</option>
-          {MOCK_COUNTRIES.map(c => (
-            <option key={c} value={c}>{c}</option>
+          {countries.map((c, idx) => (
+            <option key={idx} value={c}>{c}</option>
           ))}
         </select>
       </div>
