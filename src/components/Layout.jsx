@@ -11,8 +11,9 @@ import Button from './ui/Button'
 export default function Layout(){
   const loc = useLocation()
   const nav = useNavigate()
-  const { getCurrentUser, logout: logoutHook } = useAuth()
+  const { getCurrentUser, logout: logoutHook, getAvatar } = useAuth()
   const [user, setUser] = useState(null)
+  const [avatar, setAvatar] = useState('')
   const [openBell, setOpenBell] = useState(false)
 
   useEffect(() => {
@@ -22,6 +23,8 @@ export default function Layout(){
         try {
           const userData = await getCurrentUser()
           setUser(userData)
+          const savedAvatar = getAvatar()
+          setAvatar(savedAvatar || '')
         } catch (err) {
           console.error('사용자 정보 조회 실패:', err)
           setUser(null)
@@ -33,7 +36,7 @@ export default function Layout(){
   return (
     <div className="grid h-screen" style={{gridTemplateColumns: '280px 1fr'}}>
       <aside className="px-5 py-6 bg-gradient-sidebar backdrop-blur border-r border-primary-dark/12 relative overflow-hidden">
-        <div className="font-bold text-2xl tracking-tight mb-8 text-sidebar-brand" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'}}>Plan‑it</div>
+        <div className="font-bold text-2xl tracking-tight mb-8 text-sidebar-brand cursor-pointer hover:opacity-80 transition" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'}} onClick={()=>nav('/')}>Plan‑it</div>
         <nav className="flex flex-col gap-2">
           <NavLink to="/" className={({isActive})=> isActive
             ? 'no-underline px-4 py-3 rounded-xl transition-all duration-200 relative overflow-hidden flex gap-3 items-center font-semibold text-white shadow-button bg-gradient-primary'
@@ -69,7 +72,13 @@ export default function Layout(){
               </Popover>
               {user ? (
                 <div className="flex gap-3 items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-primary grid place-items-center font-semibold text-white cursor-pointer transition border-2 border-emerald-500/20 hover:scale-105" onClick={()=>nav('/profile')}>{user.username?.[0]?.toUpperCase()||user.email?.[0]?.toUpperCase()||'U'}</div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-primary grid place-items-center font-semibold text-white cursor-pointer transition border-2 border-emerald-500/20 hover:scale-105 overflow-hidden" onClick={()=>nav('/profile')}>
+                    {avatar ? (
+                      <img src={avatar} alt="프로필" className="w-full h-full object-cover" />
+                    ) : (
+                      user.username?.[0]?.toUpperCase()||user.email?.[0]?.toUpperCase()||'U'
+                    )}
+                  </div>
                   <div className="flex flex-col leading-tight">
                     <div className="font-semibold text-text">{user.username || user.email || 'User'}</div>
                   </div>

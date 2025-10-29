@@ -20,7 +20,7 @@ export const useReview = () => {
         formData.append('file', photoFile)
       }
 
-      // trip_id는 쿼리 파라미터로만 전달
+
       const response = await api.post(`/reviews/?trip_id=${tripId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

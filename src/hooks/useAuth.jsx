@@ -110,31 +110,36 @@ export const useAuth = () => {
     }
   }
 
-  // 프로필 사진 업로드
+  // 프로필 사진 업로드 (localStorage)
   const uploadAvatar = async (file) => {
     setLoading(true)
     setError(null)
     try {
-      // 백엔드 API 완성 후 주석 해제
-      // const formData = new FormData()
-      // formData.append('file', file)
-      // const response = await api.post('/users/me/avatar', formData, {
-      //   headers: { 'Content-Type': 'multipart/form-data' }
-      // })
-      // return response.data
-
-      // 임시: 로컬 미리보기만 (백엔드 API 완성 되면 삭제 예정)
       return new Promise((resolve) => {
         const reader = new FileReader()
-        reader.onload = () => resolve({ avatar_url: reader.result })
+        reader.onload = () => {
+          const avatarUrl = reader.result
+          localStorage.setItem('user_avatar', avatarUrl)
+          resolve({ avatar_url: avatarUrl })
+        }
         reader.readAsDataURL(file)
       })
     } catch (err) {
-      setError(err.response?.data?.detail || '프로필 사진 업로드 실패')
+      setError('프로필 사진 업로드 실패')
       throw err
     } finally {
       setLoading(false)
     }
+  }
+
+  // 프로필 사진 가져오기
+  const getAvatar = () => {
+    return localStorage.getItem('user_avatar') || null
+  }
+
+  // 프로필 사진 삭제
+  const deleteAvatar = () => {
+    localStorage.removeItem('user_avatar')
   }
 
   return {
@@ -148,5 +153,7 @@ export const useAuth = () => {
     updateUser,
     deleteUser,
     uploadAvatar,
+    getAvatar,
+    deleteAvatar,
   }
 }
