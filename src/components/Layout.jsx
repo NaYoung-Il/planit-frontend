@@ -62,39 +62,37 @@ export default function Layout(){
           </NavLink>
         </nav>
       </aside>
-      <div className="flex flex-col h-screen overflow-y-auto">
-        <div className="bg-surface rounded-t-3xl mx-6 p-5 pb-6 backdrop-blur border border-primary-dark/12 relative">
-          <header className="flex gap-4 items-center py-5 px-6 bg-bg-card backdrop-blur border-b border-primary-dark/15 sticky top-0 z-10">
-            <div className="flex items-center gap-3 flex-1 min-w-[420px]">
-              <input className="flex-1 h-13 px-5 rounded-[26px] bg-white text-text border border-primary-dark/20 text-sm transition focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(16,185,129,0.12)] placeholder:text-text-soft" placeholder="Search for your favourite destination" />
-              <button className="h-13 px-6 rounded-[26px] bg-gradient-primary text-white font-semibold cursor-pointer text-sm transition shadow-button hover:-translate-y-px hover:shadow-lg">Search</button>
-            </div>
-            <div className="ml-auto flex gap-3 items-center">
-              <button className="bell bg-surface border border-primary-dark/15 rounded-xl w-12 h-12 grid place-items-center cursor-pointer text-text transition hover:bg-emerald-50 hover:-translate-y-px" title="알림" onClick={()=>setOpenBell(v=>!v)}>🔔</button>
-              <Popover open={openBell} onClose={()=>setOpenBell(false)} anchorClass=".bell">
-                <BellContent />
-              </Popover>
-              {user ? (
-                <div className="flex gap-3 items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-primary grid place-items-center font-semibold text-white cursor-pointer transition border-2 border-emerald-500/20 hover:scale-105 overflow-hidden" onClick={()=>nav('/profile')}>
-                    {avatar ? (
-                      <img src={avatar} alt="프로필" className="w-full h-full object-cover" />
-                    ) : (
-                      user.username?.[0]?.toUpperCase()||user.email?.[0]?.toUpperCase()||'U'
-                    )}
-                  </div>
-                  <div className="flex flex-col leading-tight">
-                    <div className="font-semibold text-text">{user.username || user.email || 'User'}</div>
-                  </div>
-                  <Button variant="inverse" onClick={()=>{ logoutHook(); nav('/login') }}>로그아웃</Button>
+      <div className="flex flex-col h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden">
+        <header className="flex gap-4 items-center py-5 px-6 bg-bg-card backdrop-blur border-b border-primary-dark/15 sticky top-0 z-10">
+          <div className="flex items-center gap-3 flex-1 min-w-[420px]">
+            <input className="flex-1 h-13 px-5 rounded-[26px] bg-white text-text border border-primary-dark/20 text-sm transition focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(16,185,129,0.12)] placeholder:text-text-soft" placeholder="Search for your favourite destination" />
+            <button className="h-13 px-6 rounded-[26px] bg-gradient-primary text-white font-semibold cursor-pointer text-sm transition shadow-button hover:-translate-y-px hover:shadow-lg">Search</button>
+          </div>
+          <div className="ml-auto flex gap-3 items-center">
+            <button className="bell bg-surface border border-primary-dark/15 rounded-xl w-12 h-12 grid place-items-center cursor-pointer text-text transition hover:bg-emerald-50 hover:-translate-y-px" title="알림" onClick={()=>setOpenBell(v=>!v)}>🔔</button>
+            <Popover open={openBell} onClose={()=>setOpenBell(false)} anchorClass=".bell">
+              <BellContent />
+            </Popover>
+            {user ? (
+              <div className="flex gap-3 items-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-primary grid place-items-center font-semibold text-white cursor-pointer transition border-2 border-emerald-500/20 hover:scale-105 overflow-hidden" onClick={()=>nav('/profile')}>
+                  {avatar ? (
+                    <img src={avatar} alt="프로필" className="w-full h-full object-cover" />
+                  ) : (
+                    user.username?.[0]?.toUpperCase()||user.email?.[0]?.toUpperCase()||'U'
+                  )}
                 </div>
-              ) : (
-                <Button onClick={()=>nav('/login')}>로그인</Button>
-              )}
-            </div>
-          </header>
-          <Outlet key={loc.key} />
-        </div>
+                <div className="flex flex-col leading-tight">
+                  <div className="font-semibold text-text">{user.username || user.email || 'User'}</div>
+                </div>
+                <Button variant="inverse" onClick={()=>{ logoutHook(); nav('/login') }}>로그아웃</Button>
+              </div>
+            ) : (
+              <Button onClick={()=>nav('/login')}>로그인</Button>
+            )}
+          </div>
+        </header>
+        <Outlet key={loc.key} />
       </div>
       <RightSidebar />
     </div>

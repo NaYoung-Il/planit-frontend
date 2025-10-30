@@ -290,10 +290,22 @@ export default function TripInfoEdit() {
   }
 
   // 체크리스트 업데이트
-  const handleUpdateCheck = (itemId, field, value) => {
+  const handleUpdateCheck = async (itemId, field, value) => {
+    // 로컬 상태 업데이트
     setChecklists(checklists.map(item =>
       item.id === itemId ? { ...item, [field]: value } : item
     ))
+
+    // is_checked 변경되면 바로 DB 저장
+    if (field === 'is_checked') {
+        const item = checklists.find(c => c.id === itemId)
+        if (item && !item.isNew) {
+          await updateChecklistItem(itemId, {
+            item_name: item.item_name,
+            is_checked: value
+          })
+        }
+    }
   }
 
   // 체크리스트 삭제
@@ -517,16 +529,16 @@ export default function TripInfoEdit() {
           {!isEditMode ? (
             <div className="flex flex-col gap-3">
               <div>
-                <span className="text-sm text-text-soft">🚩</span>
+                <span className="text-lg font-bold text-text-soft">🚩 COUNTRY</span>
                 <p className="text-text text-lg mt-1">{country}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-lg text-text-soft">🛫 출발</span>
+                  <span className="text-lg font-bold text-text-soft">🛫 START</span>
                   <p className="text-text text-lg mt-1">{startDate?.split('T')[0]}</p>
                 </div>
                 <div>
-                  <span className="text-lg text-text-soft">🛬 도착</span>
+                  <span className="text-lg font-bold text-text-soft">🛬 END</span>
                   <p className="text-text text-lg mt-1">{endDate?.split('T')[0]}</p>
                 </div>
               </div>
@@ -581,7 +593,7 @@ export default function TripInfoEdit() {
             <div className="flex flex-col gap-2">
               {citySchedules.map((schedule, index) => (
                 <div key={schedule.id} className="text-text">
-                  <span className="font-semibold">{schedule.city}</span>
+                  <span className="font-semibold">{schedule.ko_name}</span>
                   <span className="text-text-soft text-sm ml-2">
                     {schedule.startDate?.split('T')[0]} ~ {schedule.endDate?.split('T')[0]}
                   </span>
@@ -686,17 +698,15 @@ export default function TripInfoEdit() {
 
         {/* Step 3: 준비물 체크리스트 */}
         <h3 className="text-lg font-semibold text-text">준비물 체크리스트</h3>
-        <div className="border border-primary-dark/20 rounded-lg bg-white p-4">
-          <p className="text-sm text-text-soft mb-4"></p>
-          <div className="flex flex-col gap-2 mb-3">
+        <div>
+          <div className="flex flex-col gap-2">
             {checklists.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={item.is_checked}
                   onChange={(e) => handleUpdateCheck(item.id, 'is_checked', e.target.checked)}
-                  className="w-4 h-4 rounded border-primary-dark/20"
-                  disabled={!isEditMode}
+                  className="w-4 h-4 rounded border-primary-dark/20 cursor-pointer"
                 />
                 <input
                   type="text"

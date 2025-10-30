@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import Card from '../components/Card'
 import { useReview } from '../hooks/useReview'
@@ -12,6 +13,7 @@ import Empty from '../components/ui/Empty'
 
 // 커뮤니티: 후기 작성/목록/댓글/좋아요를 모두 다루는 메인 화면
 export default function Community(){
+  const nav = useNavigate()
   const [title, setTitle] = useState('')
   const [text, setText] = useState('')
   const [rating, setRating] = useState(5)
@@ -249,18 +251,22 @@ export default function Community(){
           const createdAt = post.created_at || post.createdAt
           const cityName = post.city_name || post.city?.name || post.trip?.city_name 
           
-          const subtitleParts = [author]
-          if(cityName) subtitleParts.push(cityName)
-          if(post.rating) subtitleParts.push(`★${post.rating}`)
-          if(createdAt) {
-            subtitleParts.push(dayjs(createdAt).format('YYYY.MM.DD HH:mm'))
-          }
+          const subtitleParts = [author,cityName,`★${post.rating}`,dayjs(createdAt).format('YYYY.MM.DD HH:mm')]
+          const isAuthor = currentUser && post.user_id === currentUser.id
+
           return (
             <Card
               key={postId}
-              title={post.title || '제목 없음'}
+              title={post.title}
               subtitle={subtitleParts.filter(Boolean).join(' · ')}
-              right={<Button variant="ghost" size="sm" onClick={()=>del(postId)}>삭제</Button>}
+              right={
+                isAuthor ? (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => nav(`/community/edit/${postId}`, { state: { review: post } })}>수정</Button>
+                    <Button variant="ghost" size="sm" onClick={() => del(postId)}>삭제</Button>
+                  </div>
+                ) : null
+              }
             >
               <div className="flex flex-col gap-2.5">
                 {photoUrl && <img className="w-full max-h-[360px] object-contain rounded-xl" src={photoUrl} alt="post" />}
@@ -277,9 +283,9 @@ export default function Community(){
                 </div>
                 <div className="flex flex-col gap-2 mt-2.5">
                   {Array.isArray(comments) && comments.map(comment=> {
-                    const commentId = comment.comment_id || comment.id
-                    const commentAuthor = comment.username || comment.author || comment.user?.username
-                    const commentContent = comment.content || comment.text
+                    const commentId = comment.comment_id
+                    const commentAuthor = comment.username
+                    const commentContent = comment.content
                     return (
                       <div key={commentId} className="bg-surface border border-primary-dark/16 px-2.5 py-2 rounded-lg text-sm">
                         <b>{commentAuthor}</b> {commentContent}
