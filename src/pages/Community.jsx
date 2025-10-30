@@ -192,7 +192,7 @@ export default function Community(){
                 </select>
               </div>
             ) : (
-              <p className="text-xs text-text-soft">여행 계획을 먼저 생성해주세요.</p>
+              <p className="text-xs text-red-500">여행 계획을 먼저 생성해주세요.</p>
             )}
             <Input
               value={title}
@@ -228,7 +228,6 @@ export default function Community(){
             <input ref={fileRef} type="file" accept="image/*" onChange={e=>onUpload(e.target.files?.[0])} className="hidden" />
             {photoPreview && <img className="mt-2 max-h-[220px] max-w-full object-contain rounded-xl shadow" src={photoPreview} alt="preview" />}
             {!isAuthed && <p className="text-xs text-text-soft">로그인 후 등록할 수 있습니다.</p>}
-            {isAuthed && userTrips.length === 0 && <p className="text-xs text-yellow-600">여행 계획을 먼저 생성해주세요.</p>}
             <Button variant="primary" type="submit" disabled={!isAuthed || userTrips.length === 0}>올리기</Button>
           </form>
         </Card>
@@ -241,14 +240,14 @@ export default function Community(){
         {!loading && !error && Array.isArray(posts) && posts.map(post=> {
           // 백엔드 응답 필드명 매핑
           const postId = post.review_id || post.id
-          const author = post.username || post.author || post.user?.username || '익명'
-          const content = post.content || post.text || ''
-          const photoUrl = post.photo_url || post.photo || post.image_url || ''
+          const author = post.username || post.author || post.user?.username 
+          const content = post.content || post.text 
+          const photoUrl = post.photo_url || post.photo || post.image_url 
           const comments = post.comments || []
           const likeCount = post.like_count || post.likeCount || post.likes || 0
           const liked = post.is_liked || post.liked || false
           const createdAt = post.created_at || post.createdAt
-          const cityName = post.city_name || post.city?.name || post.trip?.city_name || ''
+          const cityName = post.city_name || post.city?.name || post.trip?.city_name 
           
           const subtitleParts = [author]
           if(cityName) subtitleParts.push(cityName)
@@ -279,8 +278,8 @@ export default function Community(){
                 <div className="flex flex-col gap-2 mt-2.5">
                   {Array.isArray(comments) && comments.map(comment=> {
                     const commentId = comment.comment_id || comment.id
-                    const commentAuthor = comment.username || comment.author || comment.user?.username || '익명'
-                    const commentContent = comment.content || comment.text || ''
+                    const commentAuthor = comment.username || comment.author || comment.user?.username
+                    const commentContent = comment.content || comment.text
                     return (
                       <div key={commentId} className="bg-surface border border-primary-dark/16 px-2.5 py-2 rounded-lg text-sm">
                         <b>{commentAuthor}</b> {commentContent}

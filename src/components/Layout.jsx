@@ -2,10 +2,14 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
 import { useWeather } from '../hooks/useWeather'
+import { useEvent } from '../hooks/useEvent'
 import { useState, useEffect } from 'react'
 import Popover from './Popover'
 import dayjs from 'dayjs'
 import Button from './ui/Button'
+import Card from './Card'
+import CalMini from './CalMini'
+import WeatherWidget from './WeatherWidget'
 
 // 앱 크롬(사이드바 + 상단바)과 로그아웃 동작 담당
 export default function Layout(){
@@ -34,7 +38,7 @@ export default function Layout(){
     fetchUser()
   }, [loc.pathname])
   return (
-    <div className="grid h-screen" style={{gridTemplateColumns: '280px 1fr'}}>
+    <div className="grid h-screen" style={{gridTemplateColumns: '280px 1fr 420px'}}>
       <aside className="px-5 py-6 bg-gradient-sidebar backdrop-blur border-r border-primary-dark/12 relative overflow-hidden">
         <div className="font-bold text-2xl tracking-tight mb-8 text-sidebar-brand cursor-pointer hover:opacity-80 transition" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'}} onClick={()=>nav('/')}>Plan‑it</div>
         <nav className="flex flex-col gap-2">
@@ -92,6 +96,67 @@ export default function Layout(){
           <Outlet key={loc.key} />
         </div>
       </div>
+      <RightSidebar />
+    </div>
+  )
+}
+
+// 오른쪽 사이드바: 캘린더와 날씨
+function RightSidebar(){
+  const nav = useNavigate()
+  const { listByMonth } = useEvent()
+  const today = dayjs()
+  const [month, setMonth] = useState(today)
+  const [sel, setSel] = useState(today)
+  const [range, setRange] = useState({start: null, end: null})
+  const [events, setEvents] = useState([])
+
+  useEffect(() => {
+    setEvents(listByMonth(month.format('YYYY-MM')))
+  }, [month])
+
+  const onChangeMonth = (m) => {
+    setMonth(m)
+  }
+
+  const onPick = (d) => {
+    if(!range.start || (range.start && range.end)){
+      setRange({start: d, end: null})
+    } else if(range.start && !range.end){
+      if(d.isBefore(range.start)) setRange({start: d, end: range.start})
+      else setRange({start: range.start, end: d})
+    }
+    setSel(d)
+  }
+
+  const createTripFromRange = () => {
+    if(!(range.start && range.end)) return alert('기간을 먼저 선택하세요.')
+    nav('/trips/new', {
+      state: {
+        start_date: range.start.format('YYYY-MM-DD'),
+        end_date: range.end.format('YYYY-MM-DD')
+      }
+    })
+  }
+
+  return (
+    <div className="flex flex-col gap-6 p-6 overflow-y-auto bg-gradient-sidebar">
+      <Card title="2025년 9월" subtitle="" className="bg-bg-widget border-primary-dark/20 shadow-md">
+        <CalMini value={month} selected={sel} range={range} onPick={onPick} onChangeMonth={onChangeMonth} events={events} />
+        <div className="text-text-soft text-xs mt-3">
+          기간 선택: {range.start?range.start.format('MM.DD'):''} {range.end?`~ ${range.end.format('MM.DD')}`:''}</div>
+        {(range.start && range.end) && (
+          <Button
+            variant="primary"
+            size="sm"
+            className="mt-3"
+            onClick={createTripFromRange}
+          >
+            여행 일정 만들기
+          </Button>
+        )}
+      </Card>
+      <WeatherWidget city="Seoul" />
     </div>
   )
 }

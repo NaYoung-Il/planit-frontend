@@ -36,16 +36,31 @@ export const useReview = () => {
   }
 
   // 리뷰 목록 조회
-  const getReviews = async (tripId, params = {}) => {
+  const getReviews = async (tripId = null, params = {}) => {
     setLoading(true)
     setError(null)
     try {
       const { search, limit = 10, offset = 0 } = params
-      const queryParams = new URLSearchParams({ trip_id: tripId, limit, offset })
+      const queryParams = new URLSearchParams({ limit, offset })
+      queryParams.append('trip_id', tripId)
       if (search) queryParams.append('search', search)
 
       const response = await api.get(`/reviews/?${queryParams}`)
-      return response.data
+      const reviewsData = response.data
+
+      // 리뷰 데이터에 국가, 도시 한글이름 데이터 더해서 반환
+      const reviews = await Promise.all(
+        reviewsData.map(async (review) => {
+          const response = await api.get(`/cities/${review.city_id}`)
+          return {
+            ...review,
+            ko_name: response.data.ko_name,
+            ko_country: response.data.ko_country
+          }
+        })
+      )
+
+      return reviews
     } catch (err) {
       setError(err.response?.data?.detail || '리뷰 목록 조회 실패')
       throw err
