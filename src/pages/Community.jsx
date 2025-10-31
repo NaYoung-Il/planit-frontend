@@ -7,6 +7,7 @@ import { useComment } from '../hooks/useComment'
 import { useLike } from '../hooks/useLike'
 import { useAuth } from '../hooks/useAuth'
 import { useTrip } from '../hooks/useTrip'
+import { useCity } from '../hooks/useCity'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Empty from '../components/ui/Empty'
@@ -29,10 +30,11 @@ export default function Community(){
   const fileRef = useRef(null)
 
   const { createReview, getReviews, deleteReview } = useReview()
-  const { createComment } = useComment()
+  const { createComment, updateComment, deleteComment } = useComment()
   const { toggleLike: toggleLikeHook } = useLike()
   const { getCurrentUser } = useAuth()
   const { getTripsByUser } = useTrip()
+  const { getCityByName } = useCity()
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -159,6 +161,31 @@ export default function Community(){
     }
   }
 
+  // 댓글 수정
+  const editComment = async (reviewId, commentId, newContent) => {
+    if(!requireAuth()) return
+    try {
+      await updateComment(reviewId, commentId, { content: newContent })
+      await refresh()
+    } catch (err) {
+      console.error(err)
+      alert('댓글을 수정할 수 없습니다.')
+    }
+  }
+
+  // 댓글 삭제
+  const removeComment = async (reviewId, commentId) => {
+    if(!requireAuth()) return
+    if(!window.confirm('댓글을 삭제하시겠습니까?')) return
+    try {
+      await deleteComment(reviewId, commentId)
+      await refresh()
+    } catch (err) {
+      console.error(err)
+      alert('댓글을 삭제할 수 없습니다.')
+    }
+  }
+
   // 후기 삭제
   const del = async (id)=>{
     if(!requireAuth()) return
@@ -241,16 +268,15 @@ export default function Community(){
         {!loading && !error && posts.length === 0 && <Empty message="아직 등록된 후기가 없습니다." />}
         {!loading && !error && Array.isArray(posts) && posts.map(post=> {
           // 백엔드 응답 필드명 매핑
-          const postId = post.review_id || post.id
-          const author = post.username || post.author || post.user?.username 
-          const content = post.content || post.text 
-          const photoUrl = post.photo_url || post.photo || post.image_url 
-          const comments = post.comments || []
-          const likeCount = post.like_count || post.likeCount || post.likes || 0
-          const liked = post.is_liked || post.liked || false
-          const createdAt = post.created_at || post.createdAt
-          const cityName = post.city_name || post.city?.name || post.trip?.city_name 
-          
+          const postId = post.review_id
+          const author = post.username
+          const content = post.content 
+          const photoUrl = post.photo_url 
+          const comments = post.comments
+          const likeCount = post.like_count
+          const liked = post.is_liked
+          const createdAt = post.created_at
+          const cityName = post.city_name
           const subtitleParts = [author,cityName,`★${post.rating}`,dayjs(createdAt).format('YYYY.MM.DD HH:mm')]
           const isAuthor = currentUser && post.user_id === currentUser.id
 
@@ -263,7 +289,7 @@ export default function Community(){
                 isAuthor ? (
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={() => nav(`/community/edit/${postId}`, { state: { review: post } })}>수정</Button>
-                    <Button variant="ghost" size="sm" onClick={() => del(postId)}>삭제</Button>
+                    <Button variant="danger" size="sm" onClick={() => del(postId)}>삭제</Button>
                   </div>
                 ) : null
               }
@@ -282,14 +308,22 @@ export default function Community(){
                   </Button>
                 </div>
                 <div className="flex flex-col gap-2 mt-2.5">
-                  {Array.isArray(comments) && comments.map(comment=> {
-                    const commentId = comment.comment_id
-                    const commentAuthor = comment.username
-                    const commentContent = comment.content
+                  {Array.isArray(comments) && comments.map(commentItem=> {
+                    const commentId = commentItem.id
+                    const commentAuthor = commentItem.username
+                    const commentContent = commentItem.content
+                    const isCommentAuthor = currentUser && commentItem.user_id === currentUser.id
                     return (
-                      <div key={commentId} className="bg-surface border border-primary-dark/16 px-2.5 py-2 rounded-lg text-sm">
-                        <b>{commentAuthor}</b> {commentContent}
-                      </div>
+                      <CommentItem
+                        key={commentId}
+                        commentId={commentId}
+                        reviewId={postId}
+                        author={commentAuthor}
+                        content={commentContent}
+                        isAuthor={isCommentAuthor}
+                        onEdit={editComment}
+                        onDelete={removeComment}
+                      />
                     )
                   })}
                   <CommentInput onSubmit={value=>comment(postId, value)} disabled={!isAuthed} />
@@ -299,6 +333,72 @@ export default function Community(){
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// 댓글 
+function CommentItem({ commentId, reviewId, author, content, isAuthor, onEdit, onDelete }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(content)
+
+  const handleEdit = async () => {
+    if (!editValue.trim()) return
+    await onEdit(reviewId, commentId, editValue.trim())
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setEditValue(content)
+    setIsEditing(false)
+  }
+
+  if (isEditing) {
+    return (
+      <div className="bg-surface border border-primary-dark/16 px-2.5 py-2 rounded-lg text-sm flex flex-col gap-2">
+        <b className='m-3'>{author}</b>
+        <input
+          type="text"
+          value={editValue}
+          onChange={e => setEditValue(e.target.value)}
+          className="w-full px-2 py-1 rounded border border-primary-dark/20 bg-white text-text text-sm focus:outline-none focus:border-primary"
+          autoFocus
+        />
+        <div className="flex gap-1.5 justify-end">
+          <Button
+            onClick={handleEdit}
+            size="sm"
+            variant='inverse'
+            >
+            저장
+          </Button>
+          <Button
+            onClick={handleCancel}
+            size="sm"
+            variant='ghost'
+          >
+            취소
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="border border-primary-dark/16 px-2.5 py-2 rounded text-sm flex items-start justify-between gap-2">
+      <div className="place-self-center">
+        <b className='mx-3'>{author}</b>{content}
+      </div>
+      {isAuthor && (
+        <div className="flex gap-1 flex-shrink-0">
+          <Button variant="ghost" size="sm" title="수정" onClick={() => setIsEditing(true)}>
+            수정
+          </Button>
+          <Button variant="danger" size="sm" title="삭제" onClick={() => onDelete(reviewId, commentId)}>
+            삭제
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

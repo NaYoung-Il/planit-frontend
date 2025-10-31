@@ -59,7 +59,8 @@ export default function ReviewEdit() {
     setPhotoFile(file)
     setFileName(file.name)
     setPhotoPreview(URL.createObjectURL(file))
-    setShouldDeletePhoto(false)
+    setShouldDeletePhoto(true)
+    console.log("onUpload")
   }
 
   const handleDeletePhoto = () => {
@@ -67,6 +68,7 @@ export default function ReviewEdit() {
     setPhotoFile(null)
     setFileName('')
     setShouldDeletePhoto(true)
+    console.log("handleDeletePhoto")
   }
 
   const handleBack = () => {
@@ -83,19 +85,29 @@ export default function ReviewEdit() {
       rating,
       trip_id: parseInt(selectedTripId)
     }
-    await updateReview(reviewId, reviewData)
 
-    if (shouldDeletePhoto && existingPhotoId) {
+    // 기존 사진이 있고 새 파일을 업로드하는 경우
+    if (shouldDeletePhoto && existingPhotoId && photoFile) {
       await deletePhotoApi(reviewId, existingPhotoId)
-    }
-
-    if (photoFile) {
-      if (existingPhotoId && !shouldDeletePhoto) {
-        await deletePhotoApi(reviewId, existingPhotoId)
-      }
       await uploadPhoto(reviewId, photoFile)
+      await updateReview(reviewId, reviewData)
+      console.log("scene 1")
     }
 
+    // 사진만 삭제하는 경우 (새 파일 업로드 없이)
+    if (shouldDeletePhoto && existingPhotoId && !photoFile) {
+      await deletePhotoApi(reviewId, existingPhotoId)
+      console.log("scene 2")
+    }
+
+    // 새 파일 업로드
+    if (!existingPhotoId && shouldDeletePhoto && photoFile) {
+      await uploadPhoto(reviewId, photoFile)
+      console.log("scene 3")
+    }
+
+    setExistingPhotoId(null)
+    await updateReview(reviewId, reviewData)
     setLoading(false)
     nav('/community')
   }
@@ -106,15 +118,15 @@ export default function ReviewEdit() {
       <Card
         className="m-3"
         title="후기 수정"
-        left={
-          <button
-            type="button"
+        right={
+          <Button
+            variant='ghost'
             onClick={handleBack}
-            className="text-2xl hover:scale-110 transition-transform cursor-pointer"
+            size='sm'
             title="뒤로가기"
           >
-            ◀
-          </button>
+            취소
+          </Button>
         }
       >
         <form className="flex flex-col gap-3" onSubmit={submit}>
