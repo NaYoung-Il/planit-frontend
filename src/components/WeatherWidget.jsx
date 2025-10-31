@@ -84,7 +84,7 @@ export default function WeatherWidget({ city = 'Seoul', lat=37.566, lon=126.978 
   }[theme] || 'bg-gradient-weather'
 
   return (
-    <div className={`rounded-xl text-text p-5 min-h-[252px] grid grid-cols-2 relative z-10 gap-2 w-30 ${themeBg} overflow-hidden`}>
+    <div className={`rounded-xl text-text p-5 min-h-[252px] grid grid-cols-2 relative z-10 gap-2 mr-6 w-30 ${themeBg} overflow-hidden`}>
       <div>
         <div className="relative z-10">
           <div className="flex flex-col gap-2 mb-3 mr-1">

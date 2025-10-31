@@ -500,6 +500,7 @@ export default function TripInfoEdit() {
 
   return (
     <Card
+      className="m-6"
       title={tripName}
       subtitle={isEditMode ? '여행 수정' : '여행 정보'}
       right={

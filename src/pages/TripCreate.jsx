@@ -180,7 +180,7 @@ export default function TripCreate() {
   }
 
   return (
-    <Card title="새 여행">
+    <Card title="새 여행" className="m-6">
       {step === 1 && (
         <TripCreate1
           tripName={tripName}

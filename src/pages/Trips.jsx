@@ -68,7 +68,7 @@ export default function Trips(){
     }
   }
   return (
-    <Card title="여행" right={<Link to="/trips/new"><Button>+ 새 여행</Button></Link>}>
+    <Card className='m-6' title="여행" right={<Link to="/trips/new"><Button>+ 새 여행</Button></Link>}>
       <div className="flex flex-col gap-3">
         {loading && <div className="text-center text-text-soft">로딩 중...</div>}
         {!loading && items.length===0 && <Empty message="아직 여행이 없어요. 새 여행을 추가해보세요." />}

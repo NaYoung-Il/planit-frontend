@@ -54,7 +54,7 @@ export default function Profile(){
     setAvatar('')
   }
   return (
-    <Card title="프로필 편집" className="overflow-visible">
+    <Card title="프로필 편집" className="overflow-visible m-3">
       <form className="flex flex-col gap-4 max-w-[420px]" onSubmit={e=>{e.preventDefault();save()}}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
           <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl font-semibold overflow-hidden flex-shrink-0 shadow-button border-2 ${avatar ? 'bg-gradient-primary p-0.5' : 'bg-gradient-primary text-white'}`}>

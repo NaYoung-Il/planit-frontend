@@ -173,7 +173,7 @@ export default function Community(){
   }
 
   return (
-    <div className="grid gap-6 relative z-[1] mt-6 grid-cols-1">
+    <div className="grid gap-6 relative z-[1] m-6 grid-cols-1">
       <div className="col-span-full">
         <Card title="새 후기">
           <form className="flex flex-col gap-3" onSubmit={submit}>
@@ -235,7 +235,7 @@ export default function Community(){
         </Card>
       </div>
 
-      <div className="col-span-full flex flex-col gap-6">
+      <div className="col-span-full flex flex-col">
         {loading && <Empty message="게시글을 불러오는 중입니다." />}
         {!loading && error && <Empty message={error} />}
         {!loading && !error && posts.length === 0 && <Empty message="아직 등록된 후기가 없습니다." />}

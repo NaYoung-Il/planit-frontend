@@ -102,8 +102,9 @@ export default function ReviewEdit() {
 
 
   return (
-    <div className="p-6">
+    <div>
       <Card
+        className="m-3"
         title="후기 수정"
         left={
           <button

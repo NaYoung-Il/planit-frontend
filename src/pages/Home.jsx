@@ -13,8 +13,8 @@ export default function Home(){
     })
   }
   return (
-    <div className="flex flex-col gap-6 relative z-[1] mt-6">
-      <Card title="인기 여행지" subtitle="추천 여행지" className="bg-bg-widget border-primary-dark/20 shadow-md">
+    <div className="flex flex-col gap-6 relative z-[1]">
+      <Card title="인기 여행지" subtitle="추천 여행지" className="bg-bg-widget border-primary-dark/20 shadow-md m-6">
         <div className="mt-2">
           <div className="grid gap-6 items-stretch" style={{gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'}}>
             { [

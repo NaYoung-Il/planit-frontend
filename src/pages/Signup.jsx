@@ -33,7 +33,9 @@ export default function Signup(){
 
   return (
     <div className="min-h-dvh grid place-items-center p-12 px-4">
-      <form className="w-[380px] max-w-full bg-surface border border-primary-dark/18 shadow-[0_10px_28px_rgba(16,185,129,0.08)] rounded-lg backdrop-blur" onSubmit={submit}>
+      {/* <img className="object-contain self-end w-20 m-6 cursor-pointer transition hover:scale-105" src="http://localhost:8081/reviews/1/photos/3/raw" onClick={()=>nav('/')}/> */}
+      <div className="font-bold text-xl self-end mb-6 text-sidebar-brand cursor-pointer transition hover:scale-105" style={{filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'}} onClick={()=>nav('/')}>Plan‑it</div>
+      <form className="w-[380px] self-start max-w-full bg-surface border border-primary-dark/18 shadow-[0_10px_28px_rgba(16,185,129,0.08)] rounded-lg backdrop-blur" onSubmit={submit}>
         <div className="p-5 pt-5 pb-0">
           <h3 className="m-0 text-base font-bold text-text">회원가입</h3>
         </div>
