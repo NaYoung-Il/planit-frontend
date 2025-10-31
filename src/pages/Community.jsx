@@ -64,7 +64,7 @@ export default function Community(){
 
   // 후기 목록을 새로 불러오는 함수
   const refresh = useCallback(async ()=>{
-    if(!selectedTripId) return
+    // if(!selectedTripId) return 여행종속성 제거
     setLoading(true)
     setError('')
     try{

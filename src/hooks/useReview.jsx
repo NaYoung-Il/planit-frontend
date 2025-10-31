@@ -37,12 +37,12 @@ export const useReview = () => {
 
   // 리뷰 목록 조회
   const getReviews = async (tripId = null, params = {}) => {
-    setLoading(true)
+    setLoading(true) 
     setError(null)
     try {
-      const { search, limit = 10, offset = 0 } = params
+      const { search, limit = 100, offset = 0 } = params
       const queryParams = new URLSearchParams({ limit, offset })
-      queryParams.append('trip_id', tripId)
+      // queryParams.append('trip_id', tripId)  여행계획 종속성제거
       if (search) queryParams.append('search', search)
 
       const response = await api.get(`/reviews/?${queryParams}`)
