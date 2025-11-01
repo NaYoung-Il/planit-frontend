@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Community from './pages/Community'
 import ReviewEdit from './pages/ReviewEdit'
 import Profile from './pages/Profile'
+import About from './pages/About'
 import Protected from './components/Protected'
 import Signup from './pages/Signup'
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/trips" element={<Protected><Trips /></Protected>} />
         <Route path="/trips/new" element={<Protected><TripCreate /></Protected>} />
         <Route path="/trips/:id" element={<Protected><TripInfoEdit /></Protected>} />
+        <Route path="/about" element={<About />} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />

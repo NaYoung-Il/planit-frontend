@@ -90,6 +90,12 @@ export default function Layout(){
             <span className="w-5 text-center text-lg" aria-hidden>🗣️</span>
             <span>커뮤니티</span>
           </NavLink>
+          <NavLink to="/about" className={({isActive})=> isActive
+            ? 'no-underline px-4 py-3 rounded-xl transition-all duration-200 relative overflow-hidden flex gap-3 items-center font-semibold text-white shadow-button bg-gradient-primary'
+            : 'no-underline px-4 py-3 rounded-xl transition-all duration-200 relative overflow-hidden flex gap-3 items-center font-medium text-sidebar-link hover:bg-emerald-500/15 hover:translate-x-1'}>
+            <span className="w-5 text-center text-lg" aria-hidden>📖</span>
+            <span>소개 및 도움말</span>
+          </NavLink>
         </nav>
       </aside>
       <div className="flex flex-col h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden">
